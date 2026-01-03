@@ -94,7 +94,7 @@ $username = $_SESSION['username'] ?? '';
 }
 
 body {
-    font-family: 'Inter', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: 'Plus Jakarta Sans', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: var(--gray-100);
     min-height: 100vh;
     color: var(--gray-800);

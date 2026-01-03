@@ -2,6 +2,20 @@
 // Admin Sidebar Component - Push Layout with Toggle
 ?>
 <style>
+/* Pre-render styles based on localStorage state */
+html.sidebar-open .admin-sidebar {
+    transform: translateX(0) !important;
+}
+html.sidebar-open .sidebar-trigger {
+    opacity: 0 !important;
+    visibility: hidden !important;
+}
+/* Push all content by adding padding to body - this preserves container centering */
+html.sidebar-open body {
+    padding-left: 280px !important;
+}
+</style>
+<style>
 /* SIDEBAR TRIGGER BUTTON */
 .sidebar-trigger {
     position: fixed;
@@ -61,15 +75,6 @@
 .admin-sidebar.active {
     transform: translateX(0);
 }
-
-/* Push content when sidebar is active */
-.admin-sidebar.active ~ .admin-main {
-    margin-left: 280px;
-}
-
-/* Reset page-info padding when sidebar is active */
-.admin-sidebar.active ~ .admin-main .page-info {
-    padding-left: 0;
 }
 
 /* Sidebar Header */
@@ -336,11 +341,11 @@
                     Kelola Master
                 </a>
                 <div class="nav-submenu">
-                    <a href="admin_lokasi.php" class="nav-link">
+                    <a href="kelola_lokasi.php" class="nav-link">
                         <i class="fas fa-circle"></i>
                         Kelola Lokasi
                     </a>
-                    <a href="admin_jenis_peralatan.php" class="nav-link">
+                    <a href="kelola_jenis_peralatan.php" class="nav-link">
                         <i class="fas fa-circle"></i>
                         Kelola Jenis Peralatan
                     </a>
@@ -403,23 +408,30 @@ const sidebar = document.getElementById('adminSidebar');
 const sidebarTrigger = document.getElementById('sidebarTrigger');
 const sidebarClose = document.getElementById('sidebarClose');
 
-// Open sidebar on hover trigger
-sidebarTrigger.addEventListener('mouseenter', function() {
+// Function to open sidebar and save state
+function openSidebar() {
+    document.documentElement.classList.add('sidebar-open');
     sidebar.classList.add('active');
     sidebarTrigger.classList.add('hidden');
-});
+    localStorage.setItem('sidebarOpen', 'true');
+}
 
-// Also support click
-sidebarTrigger.addEventListener('click', function() {
-    sidebar.classList.add('active');
-    sidebarTrigger.classList.add('hidden');
-});
-
-// Close sidebar only with close button
-sidebarClose.addEventListener('click', function() {
+// Function to close sidebar and save state
+function closeSidebar() {
+    document.documentElement.classList.remove('sidebar-open');
     sidebar.classList.remove('active');
     sidebarTrigger.classList.remove('hidden');
-});
+    localStorage.setItem('sidebarOpen', 'false');
+}
+
+// Open sidebar on hover trigger
+sidebarTrigger.addEventListener('mouseenter', openSidebar);
+
+// Also support click
+sidebarTrigger.addEventListener('click', openSidebar);
+
+// Close sidebar only with close button
+sidebarClose.addEventListener('click', closeSidebar);
 
 // Toggle submenu
 function toggleSubmenu(element) {
@@ -427,8 +439,16 @@ function toggleSubmenu(element) {
     navItem.classList.toggle('open');
 }
 
-// Set active link based on current page
+// Set active link and restore sidebar state on page load
 document.addEventListener('DOMContentLoaded', function() {
+    // Restore sidebar state from localStorage
+    const sidebarState = localStorage.getItem('sidebarOpen');
+    if (sidebarState === 'true') {
+        sidebar.classList.add('active');
+        sidebarTrigger.classList.add('hidden');
+    }
+
+    // Set active link based on current page
     const currentPage = window.location.pathname.split('/').pop();
     const navLinks = document.querySelectorAll('.nav-link');
     
