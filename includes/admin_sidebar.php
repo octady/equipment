@@ -307,7 +307,7 @@
     <!-- Header -->
     <div class="sidebar-header">
         <div class="sidebar-logo">
-            <img src="img/logo_bandara_putih.png" alt="InJourney Logo">
+            <img src="assets/img/logo_bandara_putih.png" alt="InJourney Logo">
         </div>
         <button class="sidebar-close" id="sidebarClose">
             <i class="fas fa-times"></i>

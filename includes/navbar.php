@@ -5,7 +5,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
 <header class="top-header">
     <div class="header-content">
         <div class="logo-left">
-            <img src="img/logo_injourney.png" alt="InJourney Airports" class="logo-injourney">
+            <img src="assets/img/logo_injourney.png" alt="InJourney Airports" class="logo-injourney">
         </div>
         
         <!-- Hamburger Menu Button (Mobile Only) -->
@@ -31,7 +31,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
             </button>
         </nav>
         <div class="logo-right">
-            <img src="img/logo_bandara.png" alt="Bandara" class="logo-bandara">
+            <img src="assets/img/logo_bandara.png" alt="Bandara" class="logo-bandara">
         </div>
     </div>
 </header>

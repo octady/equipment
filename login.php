@@ -596,7 +596,7 @@ input[type="password"]::-webkit-clear-button {
     <!-- LEFT SECTION -->
     <div class="left-section">
         <div class="logo-container">
-            <img src="img/logo_bandara.png" alt="Logo">
+            <img src="assets/img/logo_bandara.png" alt="Logo">
         </div>
         
         <div class="brand-badge">
