@@ -352,7 +352,7 @@
             </div>
 
             <div class="nav-item">
-                <a href="admin_users.php" class="nav-link">
+                <a href="admin_personnel.php" class="nav-link">
                     <i class="fas fa-users"></i>
                     Kelola User
                 </a>

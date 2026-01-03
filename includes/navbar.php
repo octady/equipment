@@ -21,8 +21,8 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <li class="nav-item <?= ($current_page == 'monitoring.php') ? 'active' : '' ?>">
                     <a href="monitoring.php">Monitoring</a>
                 </li>
-                <li class="nav-item <?= ($current_page == 'history.php') ? 'active' : '' ?>">
-                    <a href="history.php">Riwayat Monitoring</a>
+                <li class="nav-item <?= ($current_page == 'riwayat_monitoring.php') ? 'active' : '' ?>">
+                    <a href="riwayat_monitoring.php">Riwayat Monitoring</a>
                 </li>
             </ul>
             <button class="logout-btn" onclick="location.href='logout.php'">
