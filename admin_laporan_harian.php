@@ -105,8 +105,14 @@ while ($row = $result->fetch_assoc()) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Laporan Monitoring (Admin)</title>
+    <script>
+    // Critical: Run BEFORE any rendering to prevent sidebar flicker
+    if (localStorage.getItem('sidebarOpen') === 'true') {
+        document.documentElement.classList.add('sidebar-open');
+    }
+    </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Admin Styles from previous reports reused for Navbar, but Page Styles updated to User version -->
     <link rel="stylesheet" href="../assets/css/style.css"> 
     
