@@ -284,7 +284,7 @@ body {
     position: relative;
     overflow: hidden;
     box-shadow: var(--shadow-md);
-    background: url('img/hero.jpg') center center / cover no-repeat;
+    background: url('assets/img/hero.jpg') center center / cover no-repeat;
     min-height: 180px;
 }
 
