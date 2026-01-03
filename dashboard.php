@@ -15,7 +15,37 @@ if ($_SESSION['role'] === 'admin') {
 }
 
 // Get user info from session
-$nama_lengkap = $_SESSION['nama_lengkap'] ?? 'Teknisi';
+$nama_lengkap = $_SESSION['nama_lengkap'] ?? 'User';
+
+// Database connection
+require_once 'config/database.php';
+
+$today = date('Y-m-d');
+
+// Get total equipment count
+$total_equipment = $conn->query("SELECT COUNT(*) as total FROM equipments")->fetch_assoc()['total'];
+
+// Get today's inspections
+$total_checked = $conn->query("SELECT COUNT(DISTINCT equipment_id) as total FROM inspections_daily WHERE tanggal = '$today'")->fetch_assoc()['total'];
+
+// Calculate pending (not yet checked today)
+$pending = $total_equipment - $total_checked;
+
+// Get status breakdown for today
+$status_normal = $conn->query("SELECT COUNT(*) as total FROM inspections_daily WHERE tanggal = '$today' AND status = 'O'")->fetch_assoc()['total'];
+$status_menurun = $conn->query("SELECT COUNT(*) as total FROM inspections_daily WHERE tanggal = '$today' AND status = '-'")->fetch_assoc()['total'];
+$status_rusak = $conn->query("SELECT COUNT(*) as total FROM inspections_daily WHERE tanggal = '$today' AND status = 'X'")->fetch_assoc()['total'];
+$status_perbaikan = $conn->query("SELECT COUNT(*) as total FROM inspections_daily WHERE tanggal = '$today' AND status = 'V'")->fetch_assoc()['total'];
+
+// Total issues (X + V + -)
+$total_issues = $status_rusak + $status_perbaikan + $status_menurun;
+
+// Calculate percentage for normal
+$normal_percentage = $total_checked > 0 ? round(($status_normal / $total_checked) * 100) : 0;
+
+// Get equipment by category
+$electrical_count = $conn->query("SELECT COUNT(*) as total FROM equipments e JOIN sections s ON e.section_id = s.id WHERE s.parent_category = 'ELECTRICAL'")->fetch_assoc()['total'];
+$mechanical_count = $conn->query("SELECT COUNT(*) as total FROM equipments e JOIN sections s ON e.section_id = s.id WHERE s.parent_category = 'MECHANICAL'")->fetch_assoc()['total'];
 $username = $_SESSION['username'] ?? '';
 ?>
 <!DOCTYPE html>
@@ -397,22 +427,22 @@ body {
 .progress-ring .progress-normal {
     stroke: var(--success);
     stroke-dasharray: 377;
-    stroke-dashoffset: 46;
-    transition: stroke-dashoffset 1s ease;
+    stroke-dashoffset: 377;
+    transition: stroke-dashoffset 1s ease-out;
 }
 
 .progress-ring .progress-warning {
     stroke: var(--warning);
     stroke-dasharray: 377;
-    stroke-dashoffset: 344;
-    transition: stroke-dashoffset 1s ease;
+    stroke-dashoffset: 377;
+    transition: stroke-dashoffset 1s ease-out;
 }
 
 .progress-ring .progress-danger {
     stroke: var(--danger);
     stroke-dasharray: 377;
-    stroke-dashoffset: 369;
-    transition: stroke-dashoffset 1s ease;
+    stroke-dashoffset: 377;
+    transition: stroke-dashoffset 1s ease-out;
 }
 
 .progress-ring-center {
@@ -996,7 +1026,7 @@ body {
                         12%
                     </div>
                 </div>
-                <div class="stat-value">248</div>
+                <div class="stat-value"><?= $total_equipment ?></div>
                 <div class="stat-label">Total Peralatan</div>
             </div>
             
@@ -1006,7 +1036,7 @@ body {
                         <i class="fas fa-clock"></i>
                     </div>
                 </div>
-                <div class="stat-value">32</div>
+                <div class="stat-value"><?= $pending ?></div>
                 <div class="stat-label">Menunggu Pengecekan</div>
             </div>
             
@@ -1020,7 +1050,7 @@ body {
                         8%
                     </div>
                 </div>
-                <div class="stat-value">5</div>
+                <div class="stat-value"><?= $total_issues ?></div>
                 <div class="stat-label">Peralatan Bermasalah</div>
             </div>
             
@@ -1030,7 +1060,7 @@ body {
                         <i class="fas fa-check-circle"></i>
                     </div>
                 </div>
-                <div class="stat-value">216</div>
+                <div class="stat-value"><?= $total_checked ?></div>
                 <div class="stat-label">Pengecekan Selesai</div>
             </div>
         </div>
@@ -1102,31 +1132,52 @@ body {
                 <div class="card-body">
                     <div class="progress-ring-container">
                         <div class="progress-ring">
+                            <?php 
+                            // Calculate stroke-dashoffset based on percentage
+                            // Circle circumference = 2 * PI * r = 2 * 3.14159 * 60 = 377
+                            $circumference = 377;
+                            $offset = $circumference - ($circumference * $normal_percentage / 100);
+                            
+                            // Determine color based on percentage
+                            if ($normal_percentage >= 80) {
+                                $ring_color = 'var(--success)'; // Green
+                            } elseif ($normal_percentage >= 50) {
+                                $ring_color = 'var(--warning)'; // Yellow/Orange
+                            } else {
+                                $ring_color = 'var(--danger)'; // Red
+                            }
+                            ?>
                             <svg width="140" height="140">
                                 <circle class="bg" cx="70" cy="70" r="60" stroke-width="12"/>
-                                <circle class="progress-normal" cx="70" cy="70" r="60" stroke-width="12"/>
+                                <circle cx="70" cy="70" r="60" stroke-width="12" 
+                                    fill="none" 
+                                    stroke="<?= $ring_color ?>" 
+                                    stroke-linecap="round"
+                                    stroke-dasharray="<?= $circumference ?>"
+                                    stroke-dashoffset="<?= $offset ?>"
+                                    style="transform: rotate(-90deg); transform-origin: center; transition: stroke-dashoffset 1s ease-out;"/>
                             </svg>
                             <div class="progress-ring-center">
-                                <div class="progress-ring-value">87%</div>
+                                <div class="progress-ring-value"><?= $normal_percentage ?>%</div>
                                 <div class="progress-ring-label">Normal</div>
                             </div>
                         </div>
                         <div class="progress-legend">
                             <div class="legend-item">
                                 <div class="legend-dot normal"></div>
-                                <span>Normal (216)</span>
+                                <span>Normal (<?= $status_normal ?>)</span>
                             </div>
                             <div class="legend-item">
                                 <div class="legend-dot warning"></div>
-                                <span>Menurun (22)</span>
+                                <span>Menurun (<?= $status_menurun ?>)</span>
                             </div>
                             <div class="legend-item">
                                 <div class="legend-dot danger"></div>
-                                <span>Gangguan (5)</span>
+                                <span>Gangguan (<?= $status_perbaikan ?>)</span>
                             </div>
                             <div class="legend-item">
                                 <div class="legend-dot offline"></div>
-                                <span>Terputus (5)</span>
+                                <span>Terputus (<?= $status_rusak ?>)</span>
                             </div>
                         </div>
                     </div>
@@ -1151,7 +1202,7 @@ body {
                                 <h4>Elektrikal</h4>
                                 <p>Panel, Genset, UPS, Trafo</p>
                             </div>
-                            <div class="category-count">142</div>
+                            <div class="category-count"><?= $electrical_count ?></div>
                         </div>
                         <div class="category-card">
                             <div class="category-icon mechanical">
@@ -1161,7 +1212,7 @@ body {
                                 <h4>Mekanikal</h4>
                                 <p>Conveyor, Escalator, Lift, AHU</p>
                             </div>
-                            <div class="category-count">106</div>
+                            <div class="category-count"><?= $mechanical_count ?></div>
                         </div>
                     </div>
                 </div>

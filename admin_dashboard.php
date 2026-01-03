@@ -16,7 +16,49 @@ if ($_SESSION['role'] !== 'admin') {
 
 // Get user info from session
 $nama_lengkap = $_SESSION['nama_lengkap'] ?? 'Administrator';
+
+// Database connection
+require_once 'config/database.php';
+
+$today = date('Y-m-d');
+
+// Get total equipment count
+$total_equipment = $conn->query("SELECT COUNT(*) as total FROM equipments")->fetch_assoc()['total'];
+
+// Get total personnel count
+$total_personnel = $conn->query("SELECT COUNT(*) as total FROM personnel")->fetch_assoc()['total'];
+
+// Get total locations count
+$total_lokasi = $conn->query("SELECT COUNT(*) as total FROM lokasi")->fetch_assoc()['total'];
+
+// Get today's inspections
+$total_checked = $conn->query("SELECT COUNT(DISTINCT equipment_id) as total FROM inspections_daily WHERE tanggal = '$today'")->fetch_assoc()['total'];
+
+// Get status breakdown for today
+$status_normal = $conn->query("SELECT COUNT(*) as total FROM inspections_daily WHERE tanggal = '$today' AND status = 'O'")->fetch_assoc()['total'];
+$status_menurun = $conn->query("SELECT COUNT(*) as total FROM inspections_daily WHERE tanggal = '$today' AND status = '-'")->fetch_assoc()['total'];
+$status_rusak = $conn->query("SELECT COUNT(*) as total FROM inspections_daily WHERE tanggal = '$today' AND status = 'X'")->fetch_assoc()['total'];
+$status_perbaikan = $conn->query("SELECT COUNT(*) as total FROM inspections_daily WHERE tanggal = '$today' AND status = 'V'")->fetch_assoc()['total'];
+
+// Total issues (need attention = -, X, V)
+$perlu_perhatian = $status_menurun;
+$bermasalah = $status_rusak + $status_perbaikan;
+
+// Get problematic equipment from today's inspections
+$problem_query = "
+    SELECT i.*, e.nama_peralatan, l.nama_lokasi, s.nama_section
+    FROM inspections_daily i
+    JOIN equipments e ON i.equipment_id = e.id
+    JOIN lokasi l ON e.lokasi_id = l.id
+    JOIN sections s ON e.section_id = s.id
+    WHERE i.tanggal = '$today' AND i.status IN ('X', 'V', '-')
+    ORDER BY FIELD(i.status, 'X', 'V', '-')
+    LIMIT 10
+";
+$problem_result = $conn->query($problem_query);
+$problem_count = $problem_result->num_rows;
 ?>
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -877,7 +919,7 @@ body {
         <div class="stats-grid">
             <div class="stat-card primary">
                 <div class="stat-body">
-                    <div class="stat-value">248</div>
+                    <div class="stat-value"><?= $total_equipment ?></div>
                     <div class="stat-label">Total Peralatan</div>
                 </div>
                 <div class="stat-icon">
@@ -887,7 +929,7 @@ body {
             
             <div class="stat-card danger">
                 <div class="stat-body">
-                    <div class="stat-value">5</div>
+                    <div class="stat-value"><?= $bermasalah ?></div>
                     <div class="stat-label">Peralatan Bermasalah</div>
                 </div>
                 <div class="stat-icon">
@@ -897,7 +939,7 @@ body {
             
             <div class="stat-card success">
                 <div class="stat-body">
-                    <div class="stat-value">24</div>
+                    <div class="stat-value"><?= $total_personnel ?></div>
                     <div class="stat-label">Total Personil</div>
                 </div>
                 <div class="stat-icon">
@@ -907,7 +949,7 @@ body {
             
             <div class="stat-card warning">
                 <div class="stat-body">
-                    <div class="stat-value">12</div>
+                    <div class="stat-value"><?= $total_lokasi ?></div>
                     <div class="stat-label">Lokasi Terdaftar</div>
                 </div>
                 <div class="stat-icon">
@@ -932,15 +974,15 @@ body {
                 <div class="card-body">
                     <div class="summary-grid">
                         <div class="summary-card success">
-                            <div class="summary-value">186</div>
+                            <div class="summary-value"><?= $status_normal ?></div>
                             <div class="summary-label">Peralatan Normal</div>
                         </div>
                         <div class="summary-card warning">
-                            <div class="summary-value">22</div>
+                            <div class="summary-value"><?= $perlu_perhatian ?></div>
                             <div class="summary-label">Perlu Perhatian</div>
                         </div>
                         <div class="summary-card danger">
-                            <div class="summary-value">5</div>
+                            <div class="summary-value"><?= $bermasalah ?></div>
                             <div class="summary-label">Bermasalah</div>
                         </div>
                     </div>
@@ -993,7 +1035,7 @@ body {
                     <i class="fas fa-exclamation-circle"></i>
                     Peralatan Bermasalah
                 </h3>
-                <span class="badge-count">4 Item</span>
+                <span class="badge-count"><?= $problem_count ?> Item</span>
             </div>
             <div class="card-body" style="padding: 0;">
                 <table class="problem-table">
@@ -1006,30 +1048,42 @@ body {
                         </tr>
                     </thead>
                     <tbody>
-                        <tr class="status-danger">
-                            <td><div class="problem-icon"><i class="fas fa-fan"></i></div></td>
-                            <td><strong>AHU Unit 3 - Terminal 2</strong></td>
-                            <td>Motor blower tidak berputar</td>
-                            <td><span class="problem-status danger">Gangguan</span></td>
-                        </tr>
-                        <tr class="status-danger">
-                            <td><div class="problem-icon"><i class="fas fa-bolt"></i></div></td>
-                            <td><strong>Panel Listrik B4 - Terminal 1</strong></td>
-                            <td>Tegangan tidak stabil</td>
-                            <td><span class="problem-status danger">Gangguan</span></td>
-                        </tr>
-                        <tr class="status-warning">
-                            <td><div class="problem-icon warning"><i class="fas fa-shield-alt"></i></div></td>
-                            <td><strong>X-Ray Scanner - Gate 2</strong></td>
-                            <td>Performa menurun 15%</td>
-                            <td><span class="problem-status warning">Menurun</span></td>
-                        </tr>
-                        <tr class="status-warning">
-                            <td><div class="problem-icon warning"><i class="fas fa-arrows-alt-v"></i></div></td>
-                            <td><strong>Escalator A2 - Terminal 1</strong></td>
-                            <td>Suara abnormal saat beroperasi</td>
-                            <td><span class="problem-status warning">Menurun</span></td>
-                        </tr>
+                        <?php if ($problem_count > 0): ?>
+                            <?php while ($problem = $problem_result->fetch_assoc()): ?>
+                                <?php 
+                                    $status_class = ($problem['status'] == 'X' || $problem['status'] == 'V') ? 'danger' : 'warning';
+                                    $status_text = match($problem['status']) {
+                                        'X' => 'Rusak',
+                                        'V' => 'Gangguan',
+                                        '-' => 'Menurun',
+                                        default => 'Unknown'
+                                    };
+                                    $icon_class = match(true) {
+                                        str_contains(strtolower($problem['nama_section']), 'genset') => 'fa-car-battery',
+                                        str_contains(strtolower($problem['nama_section']), 'hvac') => 'fa-fan',
+                                        str_contains(strtolower($problem['nama_section']), 'listrik') => 'fa-bolt',
+                                        str_contains(strtolower($problem['nama_section']), 'ups') => 'fa-battery-half',
+                                        str_contains(strtolower($problem['nama_section']), 'lighting') => 'fa-lightbulb',
+                                        str_contains(strtolower($problem['nama_section']), 'pms') || str_contains(strtolower($problem['nama_section']), 'escalator') => 'fa-arrows-alt-v',
+                                        str_contains(strtolower($problem['nama_section']), 'bhs') => 'fa-suitcase-rolling',
+                                        default => 'fa-tools'
+                                    };
+                                ?>
+                                <tr class="status-<?= $status_class ?>">
+                                    <td><div class="problem-icon <?= $status_class == 'warning' ? 'warning' : '' ?>"><i class="fas <?= $icon_class ?>"></i></div></td>
+                                    <td><strong><?= htmlspecialchars($problem['nama_peralatan']) ?> - <?= htmlspecialchars($problem['nama_lokasi']) ?></strong></td>
+                                    <td><?= htmlspecialchars($problem['keterangan'] ?? $status_text) ?></td>
+                                    <td><span class="problem-status <?= $status_class ?>"><?= $status_text ?></span></td>
+                                </tr>
+                            <?php endwhile; ?>
+                        <?php else: ?>
+                            <tr>
+                                <td colspan="4" style="text-align: center; padding: 40px; color: var(--gray-500);">
+                                    <i class="fas fa-check-circle" style="color: var(--success); font-size: 24px; margin-bottom: 10px; display: block;"></i>
+                                    Tidak ada peralatan bermasalah hari ini
+                                </td>
+                            </tr>
+                        <?php endif; ?>
                     </tbody>
                 </table>
             </div>
