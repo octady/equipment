@@ -1,0 +1,628 @@
+<?php
+include "config/database.php";
+session_start();
+
+// Admin Auth Check
+if ($_SESSION['role'] != 'admin') {
+    header("Location: index.php");
+    exit;
+}
+
+// --- AUTO-SETUP & MIGRATION Logic (Kept same as original to ensure stability) ---
+$eq_id = $_GET['id'] ?? null;
+$today = $_GET['date'] ?? date('Y-m-d');
+$is_today = ($today == date('Y-m-d'));
+
+if (!$eq_id) {
+    header("Location: admin_laporan_harian.php?date=$today");
+    exit;
+}
+
+// Fetch equipment details
+$stmt = $conn->prepare("SELECT e.*, s.nama_section, l.nama_lokasi FROM equipments e JOIN sections s ON e.section_id = s.id JOIN lokasi l ON e.lokasi_id = l.id WHERE e.id = ?");
+if (!$stmt) die("Error preparing equipment query.");
+$stmt->bind_param("i", $eq_id);
+$stmt->execute();
+$equipment = $stmt->get_result()->fetch_assoc();
+
+if (!$equipment) {
+    header("Location: admin_laporan_harian.php?date=$today");
+    exit;
+}
+
+// Fetch existing inspection
+$stmt = $conn->prepare("SELECT * FROM inspections_daily WHERE equipment_id = ? AND tanggal = ?");
+$stmt->bind_param("is", $eq_id, $today);
+$stmt->execute();
+$inspection = $stmt->get_result()->fetch_assoc();
+
+$current_status = $inspection['status'] ?? 'O';
+
+// Handle Save
+if (isset($_POST['save_detail'])) {
+    // Admin Override: Allow editing past dates? 
+    // For now, enforcing same rule: Only edit if today. 
+    // IF we want admins to edit history, remove the !$is_today check.
+    if (!$is_today) {
+        // Prevent backend save if not today
+        die("Editing past records is restricted.");
+    }
+
+    $ket = $_POST['keterangan'] ?? '';
+    if (isset($_POST['keterangan_masalah']) && !empty($_POST['keterangan_masalah'])) {
+        $ket .= "\n\n[DETAIL MASALAH]: " . $_POST['keterangan_masalah'];
+    }
+    $status = $_POST['status'] ?? $current_status;
+
+    // Use logged in admin name or preserve existing checker name?
+    // If updating, ideally we append or keep. 
+    // For simplicity, we'll keep the original checker if it exists, or add Admin if new.
+    
+    if ($inspection) {
+        $stmt = $conn->prepare("UPDATE inspections_daily SET status = ?, keterangan = ? WHERE id = ?");
+        $stmt->bind_param("ssi", $status, $ket, $inspection['id']);
+        $stmt->execute();
+        $inspection_id = $inspection['id'];
+    } else {
+        // Create new inspection
+        $stmt = $conn->prepare("INSERT INTO inspections_daily (equipment_id, tanggal, status, keterangan, checked_by) VALUES (?, ?, ?, ?, ?)");
+        $user_name = $_SESSION['nama_lengkap'] ?? 'Admin'; 
+        $stmt->bind_param("issss", $eq_id, $today, $status, $ket, $user_name);
+        $stmt->execute();
+        $inspection_id = $conn->insert_id;
+    }
+
+    // Handle Photos
+    $upload_dir = "assets/uploads/inspections/";
+    if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
+
+    if (isset($_FILES['fotos']) && !empty($_FILES['fotos']['name'][0])) {
+        foreach ($_FILES['fotos']['name'] as $key => $name) {
+            if ($_FILES['fotos']['error'][$key] == 0) {
+                $ext = pathinfo($name, PATHINFO_EXTENSION);
+                $filename = "insp_" . $eq_id . "_" . time() . "_" . $key . "." . $ext;
+                if (move_uploaded_file($_FILES['fotos']['tmp_name'][$key], $upload_dir . $filename)) {
+                    $foto_path = "assets/uploads/inspections/" . $filename;
+                    $stmt_photo = $conn->prepare("INSERT INTO inspection_photos (inspection_id, foto_path) VALUES (?, ?)");
+                    $stmt_photo->bind_param("is", $inspection_id, $foto_path);
+                    $stmt_photo->execute();
+                }
+            }
+        }
+    }
+
+    header("Location: admin_laporan_harian.php?date=$today");
+    exit;
+}
+
+// Fetch photos
+$photos = [];
+if ($inspection) {
+    $res_photos = $conn->query("SELECT * FROM inspection_photos WHERE inspection_id = " . $inspection['id'] . " ORDER BY id DESC");
+    if ($res_photos) {
+        while ($p = $res_photos->fetch_assoc()) $photos[] = $p;
+    }
+}
+?>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detail Monitoring (Admin) - <?= htmlspecialchars($equipment['nama_peralatan']) ?></title>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary: #087F8A;
+            --primary-dark: #065C63;
+            --bg-body: #f1f5f9;
+            --surface: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            
+            --status-normal-bg: #d1fae5; --status-normal-text: #065f46; --status-normal-border: #10b981;
+            --status-down-bg: #fef3c7; --status-down-text: #92400e; --status-down-border: #f59e0b;
+            --status-broken-bg: #ffe4e6; --status-broken-text: #9f1239; --status-broken-border: #f43f5e;
+            --status-standby-bg: #e0e7ff; --status-standby-text: #3730a3; --status-standby-border: #6366f1;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            margin: 0;
+            padding-top: 20px; 
+        }
+
+        /* Container */
+        .container {
+            max-width: 1000px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        /* Modern Card */
+        .glass-card {
+            background: var(--surface);
+            border-radius: 24px;
+            box-shadow: 0 20px 40px -8px rgba(0,0,0,0.08), 0 0 1px rgba(0,0,0,0.1);
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.8);
+        }
+
+        /* Header Section */
+        .detail-header {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: white;
+            padding: 40px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .detail-header::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(8,127,138,0.3) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+
+        .section-badge {
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(4px);
+            padding: 6px 12px;
+            border-radius: 50px;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .check-time {
+            text-align: right;
+        }
+        
+        .time-label {
+            font-size: 11px;
+            opacity: 0.7;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+        
+        .time-value {
+            font-family: 'Courier New', monospace;
+            font-size: 24px;
+            font-weight: 700;
+            color: #38bdf8; 
+        }
+
+        .equipment-title {
+            font-size: 28px;
+            font-weight: 800;
+            margin: 0 0 8px 0;
+            line-height: 1.2;
+        }
+
+        .equipment-location {
+            font-size: 15px;
+            opacity: 0.8;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 0;
+        }
+
+        .status-panel {
+            background: #f8fafc;
+            padding: 40px 30px;
+            border-right: 1px solid var(--border);
+        }
+
+        .form-panel {
+            padding: 40px;
+            background: white;
+        }
+
+        .status-header {
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+            letter-spacing: 0.5px;
+        }
+
+        .status-options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .status-radio-label {
+            display: flex;
+            align-items: center;
+            padding: 16px 20px;
+            background: white;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .status-radio-label:hover {
+            border-color: #cbd5e1;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        }
+
+        input[type="radio"]:checked + .status-radio-label.s-O {
+            border-color: var(--status-normal-border);
+            background: var(--status-normal-bg);
+            color: var(--status-normal-text);
+        }
+        input[type="radio"]:checked + .status-radio-label.s-X {
+            border-color: var(--status-broken-border);
+            background: var(--status-broken-bg);
+            color: var(--status-broken-text);
+        }
+        input[type="radio"]:checked + .status-radio-label.s-- {
+            border-color: var(--status-down-border);
+            background: var(--status-down-bg);
+            color: var(--status-down-text);
+        }
+        input[type="radio"]:checked + .status-radio-label.s-V {
+            border-color: var(--status-standby-border);
+            background: var(--status-standby-bg);
+            color: var(--status-standby-text);
+        }
+
+        .status-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            font-size: 16px;
+            font-weight: 800;
+            font-family: inherit;
+        }
+
+        .status-text {
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        .check-mark {
+            position: absolute;
+            right: 20px;
+            opacity: 0;
+            transform: scale(0.5);
+            transition: all 0.2s;
+        }
+        input[type="radio"]:checked + .status-radio-label .check-mark {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 10px;
+        }
+
+        textarea.premium-input {
+            width: 100%;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            font-family: inherit;
+            font-size: 15px;
+            color: var(--text-main);
+            transition: all 0.2s;
+            resize: vertical;
+            background: #fbfbfc;
+        }
+
+        textarea.premium-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: white;
+            box-shadow: 0 0 0 4px rgba(8, 127, 138, 0.1);
+        }
+
+        .alert-box {
+            background: #fff1f2;
+            border: 1px solid #fda4af;
+            border-radius: 16px;
+            padding: 24px;
+            margin-top: 30px;
+            display: none;
+            animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .alert-box.active {
+            display: block;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .alert-title {
+            color: #be123c;
+            font-weight: 700;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .photo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 12px;
+            margin-top: 20px;
+        }
+        
+        .photo-thumb {
+            aspect-ratio: 1;
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+            background: #e2e8f0;
+        }
+        
+        .photo-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .save-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 40px;
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(8, 127, 138, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .save-btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(8, 127, 138, 0.3);
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            margin-bottom: 20px;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+        .back-link:hover { opacity: 1; }
+
+        @media (max-width: 800px) {
+            .content-grid { grid-template-columns: 1fr; }
+            .status-panel { border-right: none; border-bottom: 1px solid var(--border); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <div class="glass-card">
+        <!-- Header -->
+        <div class="detail-header">
+            <a href="admin_laporan_harian.php?date=<?= $today ?>" class="back-link"><i class="fa-solid fa-arrow-left"></i> KEMBALI</a>
+
+            <?php if (!$is_today): ?>
+            <div style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 8px 12px; margin-bottom: 15px; display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: #cbd5e1;">
+                <i class="fa-solid fa-lock"></i> Mode Baca Saja (History)
+            </div>
+            <?php endif; ?>
+            
+            <div class="header-top">
+                <span class="section-badge"><?= htmlspecialchars($equipment['nama_section']) ?></span>
+                <div class="check-time">
+                    <div class="time-label">WAKTU CEK</div>
+                    <div class="time-value"><?= ($inspection && $inspection['created_at']) ? date('H:i', strtotime($inspection['created_at'])) : '--:--' ?></div>
+                </div>
+            </div>
+            
+            <h1 class="equipment-title"><?= htmlspecialchars($equipment['nama_peralatan']) ?></h1>
+            <div class="equipment-location">
+                <i class="fa-solid fa-location-dot"></i> <?= htmlspecialchars($equipment['nama_lokasi']) ?>
+            </div>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data" class="content-grid">
+            <input type="hidden" name="status" id="statusInput" value="<?= $current_status ?>">
+
+            <!-- STATUS SIDEBAR -->
+            <div class="status-panel">
+                <div class="status-header">UPDATE KONDISI ALAT (ADMIN)</div>
+                
+                <div class="status-options">
+                    <!-- Normal -->
+                    <label style="display:block; cursor: <?= $is_today ? 'pointer' : 'default' ?>;">
+                        <input type="radio" name="status_visible" value="O" style="display:none;" <?= $current_status == 'O' ? 'checked' : '' ?> <?= $is_today ? 'onchange="updateStatus(this)"' : 'disabled' ?>>
+                        <div class="status-radio-label s-O">
+                            <div class="status-icon">O</div>
+                            <div class="status-text">Normal</div>
+                            <div class="check-mark"><i class="fa-solid fa-circle-check"></i></div>
+                        </div>
+                    </label>
+
+                    <!-- Menurun -->
+                    <label style="display:block; cursor: <?= $is_today ? 'pointer' : 'default' ?>;">
+                        <input type="radio" name="status_visible" value="-" style="display:none;" <?= $current_status == '-' ? 'checked' : '' ?> <?= $is_today ? 'onchange="updateStatus(this)"' : 'disabled' ?>>
+                        <div class="status-radio-label s--">
+                            <div class="status-icon">-</div>
+                            <div class="status-text">Menurun</div>
+                            <div class="check-mark"><i class="fa-solid fa-circle-check"></i></div>
+                        </div>
+                    </label>
+
+                     <!-- Standby -->
+                     <label style="display:block; cursor: <?= $is_today ? 'pointer' : 'default' ?>;">
+                        <input type="radio" name="status_visible" value="V" style="display:none;" <?= $current_status == 'V' ? 'checked' : '' ?> <?= $is_today ? 'onchange="updateStatus(this)"' : 'disabled' ?>>
+                        <div class="status-radio-label s-V">
+                            <div class="status-icon">V</div>
+                            <div class="status-text">Standby / Gangguan</div>
+                            <div class="check-mark"><i class="fa-solid fa-circle-check"></i></div>
+                        </div>
+                    </label>
+
+                    <!-- Rusak -->
+                    <label style="display:block; cursor: <?= $is_today ? 'pointer' : 'default' ?>;">
+                        <input type="radio" name="status_visible" value="X" style="display:none;" <?= $current_status == 'X' ? 'checked' : '' ?> <?= $is_today ? 'onchange="updateStatus(this)"' : 'disabled' ?>>
+                        <div class="status-radio-label s-X">
+                            <div class="status-icon">X</div>
+                            <div class="status-text">Rusak Total</div>
+                            <div class="check-mark"><i class="fa-solid fa-circle-check"></i></div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- MAIN CONTENT FORM -->
+            <div class="form-panel">
+                
+                <div class="form-group">
+                    <label>Catatan Umum / Keterangan</label>
+                    <textarea name="keterangan" class="premium-input" placeholder="Tulis catatan umum pengecekkan disini..." style="height: 120px;" <?= $is_today ? '' : 'readonly' ?>><?= htmlspecialchars($inspection['keterangan'] ?? '') ?></textarea>
+                </div>
+
+                <!-- CONDITIONAL FORM -->
+                <div id="extraForm" class="alert-box <?= ($current_status != 'O') ? 'active' : '' ?>">
+                    <div class="alert-title">
+                        <i class="fa-solid fa-clipboard-question"></i> FORM PENGISIAN KONDISI
+                    </div>
+                    
+                    <div class="form-group">
+                        <label style="color: #881337;">Deskripsi Permasalahan & Temuan</label>
+                        <textarea name="keterangan_masalah" class="premium-input" 
+                            placeholder="Jelaskan secara detail: Gejala kerusakan, parameter yang tidak normal, dll..." 
+                            style="height: 150px; border-color: #fda4af; background: white;" <?= $is_today ? '' : 'readonly' ?>></textarea>
+                    </div>
+                </div>
+
+                 <!-- Photo Upload Section -->
+                 <div class="form-group" style="margin-top: 30px;">
+                    <label>Dokumentasi Foto</label>
+                    
+                    <?php if ($is_today): ?>
+                    <label style="display: flex; gap:10px; align-items: center; cursor: pointer; padding: 12px; border: 2px dashed #e2e8f0; border-radius: 12px; width: fit-content;">
+                        <div style="background: var(--bg-body); width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--text-muted);">
+                            <i class="fa-solid fa-camera"></i>
+                        </div>
+                        <div>
+                            <div style="font-weight: 600; font-size: 14px;">Tambah Foto</div>
+                            <div style="font-size: 11px; color: var(--text-muted); text-transform:uppercase;">Klik untuk upload</div>
+                        </div>
+                        <input type="file" name="fotos[]" multiple accept="image/*" style="display:none;" onchange="previewPhotos(this)">
+                    </label>
+                    <?php endif; ?>
+
+                    <div class="photo-grid" id="newPhotoGrid">
+                        <!-- Existing Photos -->
+                         <?php foreach ($photos as $ph): ?>
+                            <div class="photo-thumb">
+                                <img src="../<?= $ph['foto_path'] ?>">
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+
+                <?php if ($is_today): ?>
+                <button type="submit" name="save_detail" class="save-btn">
+                    <i class="fa-solid fa-save"></i> SIMPAN PERUBAHAN
+                </button>
+                <?php endif; ?>
+
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function updateStatus(startNode) {
+        // Sync to hidden input
+        document.getElementById('statusInput').value = startNode.value;
+        
+        // Toggle Conditional Form
+        const form = document.getElementById('extraForm');
+        if (startNode.value !== 'O') {
+            form.classList.add('active');
+        } else {
+            form.classList.remove('active');
+        }
+    }
+
+    function previewPhotos(input) {
+        if (input.files) {
+            Array.from(input.files).forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const div = document.createElement('div');
+                    div.className = 'photo-thumb';
+                    div.innerHTML = `<img src="${e.target.result}"><div style="position:absolute; bottom:0; left:0; right:0; background:rgba(0,128,0,0.7); color:white; font-size:10px; text-align:center; padding:2px;">BARU</div>`;
+                    document.getElementById('newPhotoGrid').appendChild(div);
+                }
+                reader.readAsDataURL(file);
+            });
+        }
+    }
+    
+    // Initial check
+    updateStatus(document.querySelector('input[name="status_visible"]:checked') || {value: '<?= $current_status ?>'});
+</script>
+
+</body>
+</html>

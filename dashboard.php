@@ -984,9 +984,10 @@ body {
 </style>
 </head>
 <body>
+    <!-- Navbar -->
+    <?php include 'includes/navbar.php'; ?>
 
-<!-- NAVBAR -->
-<?php include 'includes/navbar.php'; ?>
+
 
 <!-- MAIN CONTENT -->
 <main class="main-content">
