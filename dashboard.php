@@ -21,6 +21,7 @@ $nama_lengkap = $_SESSION['nama_lengkap'] ?? 'User';
 require_once 'config/database.php';
 
 $today = date('Y-m-d');
+$yesterday = date('Y-m-d', strtotime('-1 day'));
 
 // Get total equipment count
 $total_equipment = $conn->query("SELECT COUNT(*) as total FROM equipments")->fetch_assoc()['total'];
@@ -39,6 +40,22 @@ $status_perbaikan = $conn->query("SELECT COUNT(*) as total FROM inspections_dail
 
 // Total issues (X + V + -)
 $total_issues = $status_rusak + $status_perbaikan + $status_menurun;
+
+// Get yesterday's data for trend calculation
+$yesterday_issues = $conn->query("SELECT COUNT(*) as total FROM inspections_daily WHERE tanggal = '$yesterday' AND status IN ('X', 'V', '-')")->fetch_assoc()['total'];
+
+// Calculate trend percentage (compared to yesterday)
+$trend_percentage = 0;
+$trend_direction = 'stable';
+if ($yesterday_issues > 0) {
+    $diff = $total_issues - $yesterday_issues;
+    $trend_percentage = abs(round(($diff / $yesterday_issues) * 100));
+    if ($diff > 0) {
+        $trend_direction = 'up'; // Naik (lebih buruk)
+    } elseif ($diff < 0) {
+        $trend_direction = 'down'; // Turun (lebih baik)
+    }
+}
 
 // Calculate percentage for normal
 $normal_percentage = $total_checked > 0 ? round(($status_normal / $total_checked) * 100) : 0;
@@ -1022,10 +1039,6 @@ body {
                     <div class="stat-icon">
                         <i class="fas fa-tools"></i>
                     </div>
-                    <div class="stat-trend up">
-                        <i class="fas fa-arrow-up"></i>
-                        12%
-                    </div>
                 </div>
                 <div class="stat-value"><?= $total_equipment ?></div>
                 <div class="stat-label">Total Peralatan</div>
@@ -1046,10 +1059,12 @@ body {
                     <div class="stat-icon">
                         <i class="fas fa-exclamation-triangle"></i>
                     </div>
-                    <div class="stat-trend down">
-                        <i class="fas fa-arrow-down"></i>
-                        8%
+                    <?php if ($trend_direction !== 'stable' && $trend_percentage > 0): ?>
+                    <div class="stat-trend <?= $trend_direction ?>">
+                        <i class="fas fa-arrow-<?= $trend_direction == 'up' ? 'up' : 'down' ?>"></i>
+                        <?= $trend_percentage ?>%
                     </div>
+                    <?php endif; ?>
                 </div>
                 <div class="stat-value"><?= $total_issues ?></div>
                 <div class="stat-label">Peralatan Bermasalah</div>
@@ -1100,7 +1115,7 @@ body {
                                 <p>Pengecekan peralatan baru</p>
                             </div>
                         </a>
-                        <a href="history.php" class="quick-action-btn">
+                        <a href="riwayat_monitoring.php" class="quick-action-btn">
                             <div class="quick-action-icon">
                                 <i class="fas fa-file-alt"></i>
                             </div>
@@ -1260,6 +1275,173 @@ document.getElementById('refreshBtn').addEventListener('click', function() {
         location.reload();
     }, 1000);
 });
+
+// ============================================
+// REAL-TIME DASHBOARD FROM AUTO-SAVE
+// ============================================
+function updateDashboardFromLocalStorage() {
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Get PHP values from page
+    const phpTotalEquipment = <?= $total_equipment ?>;
+    const phpChecked = <?= $total_checked ?>;
+    const phpIssues = <?= $total_issues ?>;
+    
+    // Collect all auto-saved equipment IDs and their statuses
+    const autoSavedEquipmentIds = new Set();
+    const autoSavedProblematicIds = new Set(); // For -, X, V statuses
+    
+    // 1. Read from checklist_state_v1 (radio button selections)
+    try {
+        const checklistState = localStorage.getItem('checklist_state_v1');
+        if (checklistState) {
+            const data = JSON.parse(checklistState);
+            
+            // Check if data is for today
+            if (data.date === today) {
+                // Extract equipment IDs and check status
+                Object.keys(data).forEach(key => {
+                    const match = key.match(/^status\[(\d+)\]$/);
+                    if (match) {
+                        const equipId = parseInt(match[1]);
+                        const status = data[key];
+                        
+                        autoSavedEquipmentIds.add(equipId);
+                        
+                        // Check if problematic (-, X, V)
+                        if (status === '-' || status === 'X' || status === 'V') {
+                            autoSavedProblematicIds.add(equipId);
+                        }
+                    }
+                });
+            }
+        }
+    } catch (e) {
+        console.error('Error reading checklist state:', e);
+    }
+    
+    // 2. Read from draft_detail_* (equipment with photos/keterangan)
+    try {
+        Object.keys(localStorage).forEach(key => {
+            if (key.startsWith('draft_detail_')) {
+                const data = JSON.parse(localStorage.getItem(key));
+                
+                // Check if data is for today
+                if (data.date === today && data.eq_id) {
+                    const equipId = parseInt(data.eq_id);
+                    autoSavedEquipmentIds.add(equipId);
+                    
+                    // Check if problematic
+                    if (data.status === '-' || data.status === 'X' || data.status === 'V') {
+                        autoSavedProblematicIds.add(equipId);
+                    }
+                }
+            }
+        });
+    } catch (e) {
+        console.error('Error reading draft details:', e);
+    }
+    
+    // Count unique items
+    const autoSavedCount = autoSavedEquipmentIds.size;
+    const autoProblematicCount = autoSavedProblematicIds.size;
+    
+    // Calculate real-time stats
+    const totalCheckedRealTime = phpChecked + autoSavedCount;
+    const pendingRealTime = phpTotalEquipment - totalCheckedRealTime;
+    const totalIssuesRealTime = phpIssues + autoProblematicCount;
+    
+    // Update DOM
+    const statCards = document.querySelectorAll('.stat-card');
+    
+    // Pending card (second card - index 1)
+    const pendingCard = statCards[1];
+    if (pendingCard) {
+        const pendingValue = pendingCard.querySelector('.stat-value');
+        if (pendingValue) {
+            pendingValue.textContent = pendingRealTime;
+            
+            // Add badge if has auto-save data
+            if (autoSavedCount > 0) {
+                addDraftBadge(pendingCard, autoSavedCount);
+            }
+        }
+    }
+    
+    // Problematic card (third card - index 2)
+    const issuesCard = statCards[2];
+    if (issuesCard) {
+        const issuesValue = issuesCard.querySelector('.stat-value');
+        if (issuesValue) {
+            issuesValue.textContent = totalIssuesRealTime;
+            
+            // Add badge if has auto-save problematic data
+            if (autoProblematicCount > 0) {
+                addDraftBadge(issuesCard, autoProblematicCount);
+            }
+        }
+    }
+    
+    // Checked card (fourth card - index 3)
+    const checkedCard = statCards[3];
+    if (checkedCard) {
+        const checkedValue = checkedCard.querySelector('.stat-value');
+        if (checkedValue) {
+            checkedValue.textContent = totalCheckedRealTime;
+            
+            // Add badge if has auto-save data
+            if (autoSavedCount > 0) {
+                addDraftBadge(checkedCard, autoSavedCount);
+            }
+        }
+    }
+    
+    // Log for debugging
+    if (autoSavedCount > 0) {
+        console.log('📊 Real-time Dashboard Update:');
+        console.log(`   Auto-saved: ${autoSavedCount} items`);
+        console.log(`   Auto-saved problematic: ${autoProblematicCount} items`);
+        console.log(`   DB saved: ${phpChecked} items`);
+        console.log(`   DB problematic: ${phpIssues} items`);
+        console.log(`   Total checked: ${totalCheckedRealTime}`);
+        console.log(`   Total problematic: ${totalIssuesRealTime}`);
+        console.log(`   Pending: ${pendingRealTime}`);
+    }
+}
+
+function addDraftBadge(card, count) {
+    // Check if badge already exists
+    if (card.querySelector('.draft-badge')) return;
+    
+    const badge = document.createElement('div');
+    badge.className = 'draft-badge';
+    badge.innerHTML = `<i class="fas fa-cloud"></i> +${count} draft`;
+    badge.style.cssText = `
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        background: linear-gradient(135deg, #0d9488 0%, #115e59 100%);
+        color: white;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        box-shadow: 0 2px 8px rgba(13, 148, 136, 0.3);
+        z-index: 10;
+    `;
+    
+    card.style.position = 'relative';
+    card.appendChild(badge);
+}
+
+// Run on page load
+document.addEventListener('DOMContentLoaded', updateDashboardFromLocalStorage);
+
+// Also update every 5 seconds to catch changes from other tabs
+setInterval(updateDashboardFromLocalStorage, 5000);
 </script>
 
 </body>

@@ -27,7 +27,7 @@ while ($row_mig = $res_mig->fetch_assoc()) {
 
 $eq_id = $_GET['id'] ?? null;
 if (!$eq_id) {
-    header("Location: checklist.php");
+    header("Location: monitoring.php");
     exit;
 }
 
@@ -43,7 +43,7 @@ $stmt->execute();
 $equipment = $stmt->get_result()->fetch_assoc();
 
 if (!$equipment) {
-    header("Location: checklist.php");
+    header("Location: monitoring.php");
     exit;
 }
 
@@ -59,6 +59,11 @@ $current_status = $_GET['status'] ?? ($inspection['status'] ?? 'O');
 // Handle Deletion of specific photo
 if (isset($_GET['delete_photo_id'])) {
     $photo_id = (int) $_GET['delete_photo_id'];
+    // Logic delete photo can remain direct if it's an existing record.
+    // If it's a new flow, maybe we assume "Detail" starts fresh or edits existing?
+    // User said "kembali lagi ke checklist.php dan ttep menyimpan yang diceklist sebelumnya".
+    // This implies we prioritize the Draft state.
+    // For now, let's keep deletion of *existing* DB photos working.
     $stmt_del = $conn->prepare("DELETE FROM inspection_photos WHERE id = ?");
     $stmt_del->bind_param("i", $photo_id);
     $stmt_del->execute();
@@ -66,47 +71,9 @@ if (isset($_GET['delete_photo_id'])) {
     exit;
 }
 
-// Handle Save
-if (isset($_POST['save_detail'])) {
-    $ket = $_POST['keterangan'] ?? '';
-    $status = $_POST['status'] ?? $current_status;
+// NOTE: POST 'save_detail' logic is REMOVED.
+// Client-side JS will handle saving to localStorage and redirection.
 
-    // 1. Save or Update basic inspection
-    if ($inspection) {
-        $stmt = $conn->prepare("UPDATE inspections_daily SET status = ?, keterangan = ? WHERE id = ?");
-        $stmt->bind_param("ssi", $status, $ket, $inspection['id']);
-        $stmt->execute();
-        $inspection_id = $inspection['id'];
-    } else {
-        $stmt = $conn->prepare("INSERT INTO inspections_daily (equipment_id, tanggal, status, keterangan) VALUES (?, ?, ?, ?)");
-        $stmt->bind_param("isss", $eq_id, $today, $status, $ket);
-        $stmt->execute();
-        $inspection_id = $conn->insert_id;
-    }
-
-    // 2. Handle Multiple Photo Uploads
-    $upload_dir = "assets/uploads/inspections/";
-    if (!is_dir($upload_dir))
-        mkdir($upload_dir, 0777, true);
-
-    if (isset($_FILES['fotos']) && !empty($_FILES['fotos']['name'][0])) {
-        foreach ($_FILES['fotos']['name'] as $key => $name) {
-            if ($_FILES['fotos']['error'][$key] == 0) {
-                $ext = pathinfo($name, PATHINFO_EXTENSION);
-                $filename = "insp_" . $eq_id . "_" . time() . "_" . $key . "." . $ext;
-                if (move_uploaded_file($_FILES['fotos']['tmp_name'][$key], $upload_dir . $filename)) {
-                    $foto_path = "assets/uploads/inspections/" . $filename;
-                    $stmt_photo = $conn->prepare("INSERT INTO inspection_photos (inspection_id, foto_path) VALUES (?, ?)");
-                    $stmt_photo->bind_param("is", $inspection_id, $foto_path);
-                    $stmt_photo->execute();
-                }
-            }
-        }
-    }
-
-    header("Location: checklist.php");
-    exit;
-}
 
 // Fetch photos for this exhibition
 $photos = [];
@@ -129,6 +96,7 @@ if ($inspection) {
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         :root {
             --brand-primary: #087F8A;
@@ -597,7 +565,8 @@ if ($inspection) {
                         <label class="p-upload-card" id="upload-card">
                             <input type="file" id="photo-input" multiple accept="image/*" onchange="addPhotos(this)"
                                 style="display:none">
-                            <i class="fa-solid fa-camera"></i>
+                            <img src="assets/img/upload_icon.png"
+                                style="width: 28px; height: 28px; object-fit: contain; filter: grayscale(100%) opacity(0.6);">
                             <b>Tambah</b>
                         </label>
                     </div>
@@ -613,7 +582,7 @@ if ($inspection) {
                 </div>
 
                 <div class="p-actions">
-                    <a href="checklist.php" class="p-btn p-btn-secondary">KEMBALI</a>
+                    <a href="monitoring.php" class="p-btn p-btn-secondary">KEMBALI</a>
                     <button type="submit" name="save_detail" class="p-btn p-btn-primary"
                         onclick="return prepareFormData(event)">SIMPAN</button>
                 </div>
@@ -634,6 +603,9 @@ if ($inspection) {
 
                 // Clear the input so the same file can be selected again if needed
                 input.value = '';
+
+                // Trigger auto-save
+                saveToLocalStorage();
             }
         }
 
@@ -667,46 +639,223 @@ if ($inspection) {
             accumulatedFiles.forEach((file, idx) => {
                 displayPreview(file, idx);
             });
+
+            // Trigger auto-save after removal
+            saveToLocalStorage();
         }
 
         function prepareFormData(event) {
-            if (accumulatedFiles.length === 0) {
-                // No new photos, allow normal form submission
-                return true;
+            event.preventDefault();
+            // Since this is called via onclick on the button, event.currentTarget is the button
+            const btn = event.currentTarget;
+
+            // UI Feedback
+            const originalText = btn.innerText;
+            btn.innerText = 'Menyimpan...';
+            btn.disabled = true;
+
+            const form = btn.closest('form');
+            if (!form) {
+                console.error("Form not found!");
+                btn.innerText = originalText;
+                btn.disabled = false;
+                return false;
+            }
+            const eqId = <?= $eq_id ?>;
+            const status = form.querySelector('input[name="status"]').value; // hidden input or updated via JS?
+            // Wait, radio buttons update the hidden input? Or we grab selected radio?
+            // The form has hidden input name='status'. We should ensure it's updated.
+            // But wait, the PHP renders <input type="hidden" name="status" value="...">.
+            // And we have radios p-status-radio.
+
+            // Get selected radio if any, else use hidden default
+            const selectedRadio = form.querySelector('input.p-status-radio:checked');
+            const finalStatus = selectedRadio ? selectedRadio.value : (form.querySelector('input[name="status"]').value);
+
+            const textarea = form.querySelector('textarea[name="keterangan"]');
+            const keterangan = textarea ? textarea.value : '';
+
+            // Handle File Upload first
+            const uploadFormData = new FormData();
+            if (accumulatedFiles.length > 0) {
+                accumulatedFiles.forEach((file, index) => {
+                    uploadFormData.append('fotos[]', file);
+                });
             }
 
-            event.preventDefault();
-
-            const form = event.target.closest('form');
-            const formData = new FormData(form);
-
-            // Remove the original file input data if any
-            formData.delete('fotos[]');
-
-            // Add accumulated files
-            accumulatedFiles.forEach((file, index) => {
-                formData.append('fotos[]', file);
-            });
-
-            // Submit via fetch
-            fetch(form.action || window.location.href, {
+            fetch('ajax_upload_detail.php', {
                 method: 'POST',
-                body: formData
+                body: uploadFormData
             })
-                .then(response => {
-                    if (response.ok) {
-                        window.location.href = 'checklist.php';
+                .then(r => r.text()) // Get text first to debug JSON issues
+                .then(text => {
+                    let data;
+                    try {
+                        data = JSON.parse(text);
+                    } catch (e) {
+                        console.error('Raw response:', text);
+                        throw new Error('Server mengembalikan response tidak valid: ' + text.substring(0, 150));
+                    }
+
+                    if (data.success) {
+                        // Create Draft Object with date for daily reset
+                        const today = new Date().toISOString().split('T')[0];
+                        const draftData = {
+                            date: today,
+                            eq_id: eqId,
+                            status: finalStatus,
+                            keterangan: keterangan,
+                            new_photos: data.files || []
+                        };
+
+                        // Save to LocalStorage
+                        localStorage.setItem('draft_detail_' + eqId, JSON.stringify(draftData));
+
+                        // Clear auto-save data since we're saving as draft
+                        localStorage.removeItem(`detail_autosave_${eqId}`);
+
+                        // Show Success & Redirect
+                        Swal.fire({
+                            title: 'Tersimpan Sementara!',
+                            text: 'Silakan lanjutkan pengisian checklist.',
+                            icon: 'success',
+                            timer: 1500,
+                            showConfirmButton: false
+                        }).then(() => {
+                            window.location.href = 'monitoring.php';
+                        });
                     } else {
-                        alert('Terjadi kesalahan saat menyimpan. Silakan coba lagi.');
+                        Swal.fire('Gagal', 'Upload foto gagal: ' + (data.errors ? data.errors.join(', ') : 'Unknown'), 'error');
+                        btn.innerText = originalText;
+                        btn.disabled = false;
                     }
                 })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Terjadi kesalahan saat menyimpan. Silakan coba lagi.');
+                .catch(err => {
+                    console.error(err);
+                    Swal.fire({
+                        title: 'Error',
+                        text: err.message || 'Terjadi kesalahan koneksi',
+                        icon: 'error'
+                    });
+                    btn.innerText = originalText;
+                    btn.disabled = false;
                 });
 
             return false;
         }
+
+        // Helper to update hidden status when pills are clicked
+        document.querySelectorAll('.p-status-radio').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                const hidden = document.querySelector('input[name="status"]');
+                if (hidden) hidden.value = e.target.value;
+            });
+        });
+
+        // ============================================
+        // AUTO-SAVE FUNCTIONALITY
+        // ============================================
+        const eqId = <?= $eq_id ?>;
+        const AUTO_SAVE_KEY = `detail_autosave_${eqId}`;
+
+        // Save current form state to localStorage
+        function saveToLocalStorage() {
+            const textarea = document.querySelector('textarea[name="keterangan"]');
+            const keterangan = textarea ? textarea.value : '';
+
+            // Convert accumulated files to base64 for storage
+            const photoPromises = accumulatedFiles.map(file => {
+                return new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        resolve({
+                            name: file.name,
+                            type: file.type,
+                            dataURL: e.target.result
+                        });
+                    };
+                    reader.readAsDataURL(file);
+                });
+            });
+
+            Promise.all(photoPromises).then(photosData => {
+                const autoSaveData = {
+                    keterangan: keterangan,
+                    photos: photosData,
+                    timestamp: Date.now()
+                };
+
+                localStorage.setItem(AUTO_SAVE_KEY, JSON.stringify(autoSaveData));
+            });
+        }
+
+        // Restore form state from localStorage
+        function restoreFromLocalStorage() {
+            const savedData = localStorage.getItem(AUTO_SAVE_KEY);
+            if (!savedData) return;
+
+            // Check if coming from monitoring or just reloading
+            const referrer = document.referrer;
+            const fromMonitoring = referrer.includes('monitoring.php');
+            const isReload = !referrer || referrer.includes('detail_temuan.php');
+
+            // Only restore if reload or from monitoring
+            if (!isReload && !fromMonitoring) {
+                localStorage.removeItem(AUTO_SAVE_KEY);
+                return;
+            }
+
+            try {
+                const data = JSON.parse(savedData);
+
+                // Restore textarea
+                const textarea = document.querySelector('textarea[name="keterangan"]');
+                if (textarea && data.keterangan) {
+                    textarea.value = data.keterangan;
+                }
+
+                // Restore photos
+                if (data.photos && data.photos.length > 0) {
+                    const previewContainer = document.getElementById('new-previews-container');
+                    data.photos.forEach((photoData, index) => {
+                        // Convert dataURL back to File object
+                        fetch(photoData.dataURL)
+                            .then(res => res.blob())
+                            .then(blob => {
+                                const file = new File([blob], photoData.name, { type: photoData.type });
+                                accumulatedFiles.push(file);
+
+                                // Display preview
+                                const div = document.createElement('div');
+                                div.className = 'p-gallery-item';
+                                div.setAttribute('data-file-index', accumulatedFiles.length - 1);
+                                div.innerHTML = `
+                                    <img src="${photoData.dataURL}">
+                                    <div class="preview-badge" style="position: absolute; top: 8px; left: 8px; background: #10b981; color: white; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 600;">Tersimpan</div>
+                                    <div class="p-photo-remove" onclick="removeNewPhoto(${accumulatedFiles.length - 1})" title="Hapus Foto" style="cursor: pointer;">✕</div>
+                                `;
+                                previewContainer.appendChild(div);
+                            });
+                    });
+                }
+            } catch (e) {
+                console.error('Error restoring auto-save data:', e);
+            }
+        }
+
+        // Auto-save on textarea input
+        const textarea = document.querySelector('textarea[name="keterangan"]');
+        if (textarea) {
+            textarea.addEventListener('input', () => {
+                saveToLocalStorage();
+            });
+        }
+
+        // Restore data immediately (no need for DOMContentLoaded since script is at bottom)
+        restoreFromLocalStorage();
+
+        // Clear auto-save data when successfully saving
+        // (Already handled in prepareFormData)
 
         // ========================================
         // NAVBAR MOBILE MENU FUNCTIONS

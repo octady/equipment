@@ -83,7 +83,8 @@ html.sidebar-open body {
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     display: flex;
     align-items: center;
-    gap: 14px;
+    justify-content: center;
+    position: relative;
 }
 
 .sidebar-logo {
@@ -98,7 +99,9 @@ html.sidebar-open body {
 }
 
 .sidebar-close {
-    margin-left: auto;
+    position: absolute;
+    top: 20px;
+    right: 20px;
     width: 32px;
     height: 32px;
     border: none;
@@ -346,10 +349,6 @@ html.sidebar-open body {
                         Kelola Lokasi
                     </a>
                     <a href="kelola_jenis_peralatan.php" class="nav-link">
-                        <i class="fas fa-circle"></i>
-                        Kelola Jenis Peralatan
-                    </a>
-                    <a href="admin_peralatan.php" class="nav-link">
                         <i class="fas fa-circle"></i>
                         Kelola Peralatan
                     </a>
