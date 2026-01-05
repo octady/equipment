@@ -1005,25 +1005,26 @@ body {
                 </div>
                 <div class="card-body">
                     <div class="quick-links-grid">
-                        <a href="admin_lokasi.php" class="quick-link-item">
+                        <a href="kelola_lokasi.php" class="quick-link-item">
                             <div class="quick-link-icon">
                                 <i class="fas fa-map-marker-alt"></i>
                             </div>
                             <span>Kelola Lokasi</span>
                         </a>
-                        <a href="admin_peralatan.php" class="quick-link-item">
+                        <a href="kelola_jenis_peralatan.php" class="quick-link-item">
                             <div class="quick-link-icon">
                                 <i class="fas fa-cogs"></i>
                             </div>
                             <span>Kelola Peralatan</span>
                         </a>
-                        <a href="admin_users.php" class="quick-link-item">
+                        <a href="admin_personnel.php" class="quick-link-item">
                             <div class="quick-link-icon">
                                 <i class="fas fa-user-plus"></i>
                             </div>
                             <span>Tambah Personil</span>
                         </a>
-                        <a href="admin_laporan_bulanan.php" class="quick-link-item">
+                        <?php $current_month = date('Y-m'); ?>
+                        <a href="export/export_excel.php?type=monthly&month=<?= $current_month ?>" class="quick-link-item">
                             <div class="quick-link-icon">
                                 <i class="fas fa-download"></i>
                             </div>
@@ -1059,7 +1060,7 @@ body {
                                 <?php 
                                     $status_class = ($problem['status'] == 'X' || $problem['status'] == 'V') ? 'danger' : 'warning';
                                     $status_text = match($problem['status']) {
-                                        'X' => 'Rusak',
+                                        'X' => 'Terputus',
                                         'V' => 'Gangguan',
                                         '-' => 'Menurun',
                                         default => 'Unknown'

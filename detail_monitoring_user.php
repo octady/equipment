@@ -35,13 +35,62 @@ $inspection = $stmt->get_result()->fetch_assoc();
 
 $current_status = $inspection['status'] ?? 'O';
 
+// Parse Keterangan to split General Notes vs Detail Masalah
+$full_keterangan = $inspection['keterangan'] ?? '';
+$delimiter = '[DETAIL MASALAH]:';
+$keterangan_border = strpos($full_keterangan, $delimiter);
+
+if ($keterangan_border !== false) {
+    $keterangan_umum = trim(substr($full_keterangan, 0, $keterangan_border));
+    $keterangan_masalah = trim(substr($full_keterangan, $keterangan_border + strlen($delimiter)));
+} else {
+    $keterangan_umum = $full_keterangan;
+    $keterangan_masalah = '';
+}
+
+// Logic for DISPLAY (Fix for "Kan ini menurun"):
+// Ensure existing data is cleaned up on view as well, not just on save.
+if ($current_status === 'O') {
+    if (empty($keterangan_umum) || $keterangan_umum === 'Normal') {
+        $keterangan_umum = 'Normal';
+    }
+} else {
+    // Other statuses (Menurun, Rusak, etc.)
+    if ($keterangan_umum === 'Normal') {
+        $keterangan_umum = ''; 
+    }
+}
+
+// User Request: Default note should be "Normal" if status is "O" (Normal)
+// We handle this on SAVE, but for display, if it IS "Normal" and we want to show it as "Normal" in view mode, we leave it.
+// If we want to hide "Normal" in edit mode (like we did initially), we could, but user changed mind to "Default Normal".
+// Actually, for display: if it is "Normal" and status is "O", we show "Normal". 
+// But if we want to mimic the logic where "Normal" is auto-set, we just ensure it displays correctly.
+// The "Clean View" logic: if it's "Normal", show "Normal" text.
+// If it's empty, show placeholder in edit, "Belum ada catatan" in view.
+
 // Handle Save
 if (isset($_POST['save_detail'])) {
     $ket = $_POST['keterangan'] ?? '';
+    // Logic: 
+    // 1. If Status is Normal ('O'), default the note to "Normal" if empty.
+    // 2. If Status is NOT Normal, and the note says "Normal", CLEAR IT (because it contradicts).
+    $status = $_POST['status'] ?? $current_status;
+
+    if ($status === 'O') {
+        if (empty($ket) || $ket === 'Normal') {
+            $ket = 'Normal';
+        }
+    } else {
+        // Status is NOT Normal (Menurun, Rusak, etc.)
+        if ($ket === 'Normal') {
+            $ket = ''; // Clear it because it doesn't make sense
+        }
+    }
+    
     if (isset($_POST['keterangan_masalah']) && !empty($_POST['keterangan_masalah'])) {
         $ket .= "\n\n[DETAIL MASALAH]: " . $_POST['keterangan_masalah'];
     }
-    $status = $_POST['status'] ?? $current_status;
 
     if ($inspection) {
         $stmt = $conn->prepare("UPDATE inspections_daily SET status = ?, keterangan = ? WHERE id = ?");
@@ -59,7 +108,7 @@ if (isset($_POST['save_detail'])) {
     }
 
     // Handle Photos (Same logic)
-    $upload_dir = "../assets/uploads/inspections/";
+    $upload_dir = "assets/uploads/inspections/";
     if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
 
     if (isset($_FILES['fotos']) && !empty($_FILES['fotos']['name'][0])) {
@@ -81,6 +130,32 @@ if (isset($_POST['save_detail'])) {
     exit;
 }
 
+// Handle Photo Deletion
+if (isset($_POST['delete_photo_id'])) {
+    $del_id = intval($_POST['delete_photo_id']);
+    // Check ownership/validity
+    // User can delete any photo for this inspection
+    $stmt_check = $conn->prepare("SELECT foto_path FROM inspection_photos WHERE id = ? AND inspection_id = ?");
+    $stmt_check->bind_param("ii", $del_id, $inspection['id']);
+    $stmt_check->execute();
+    $res_check = $stmt_check->get_result();
+    
+    if ($row = $res_check->fetch_assoc()) {
+        // Delete file
+        if (file_exists($row['foto_path'])) {
+            unlink($row['foto_path']);
+        }
+        // Delete DB record
+        $stmt_del = $conn->prepare("DELETE FROM inspection_photos WHERE id = ?");
+        $stmt_del->bind_param("i", $del_id);
+        $stmt_del->execute();
+    }
+    // Correct redirect to self
+    header("Location: detail_monitoring_user.php?id=$eq_id&date=$today");
+    exit;
+}
+
+
 // Fetch photos
 $photos = [];
 if ($inspection) {
@@ -99,6 +174,7 @@ if ($inspection) {
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <style>
         :root {
@@ -448,6 +524,7 @@ if ($inspection) {
             .status-panel { border-right: none; border-bottom: 1px solid var(--border); }
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
 
@@ -480,8 +557,10 @@ if ($inspection) {
             </div>
         </div>
 
-        <form method="POST" enctype="multipart/form-data" class="content-grid">
+        <form method="POST" enctype="multipart/form-data" class="content-grid" id="detailForm">
             <input type="hidden" name="status" id="statusInput" value="<?= $current_status ?>">
+            <!-- Hidden input to emulate button click for PHP check -->
+            <input type="hidden" name="save_detail" value="1">
 
             <!-- STATUS SIDEBAR -->
             <div class="status-panel">
@@ -540,20 +619,38 @@ if ($inspection) {
                 
                 <div class="form-group">
                     <label>Catatan Umum / Keterangan</label>
-                    <textarea name="keterangan" class="premium-input" placeholder="Tulis catatan umum pengecekkan disini..." style="height: 120px;" <?= $is_today ? '' : 'readonly' ?>><?= htmlspecialchars($inspection['keterangan'] ?? '') ?></textarea>
+                    <!-- View Mode -->
+                    <div id="view_keterangan" class="premium-input" style="min-height: 60px; background: #f8fafc; cursor: default; position: relative; border: 1px solid #cbd5e1;"> 
+                        <?= nl2br(htmlspecialchars($keterangan_umum ?? '')) ?: '<span style="color:#94a3b8; font-style:italic;">Belum ada catatan.</span>' ?>
+                        <?php if ($is_today): ?>
+                        <div onclick="toggleEdit('keterangan')" style="position: absolute; top: 10px; right: 10px; cursor: pointer; color: var(--primary); background: rgba(8,127,138,0.1); width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">
+                            <i class="fa-solid fa-pen" style="font-size: 12px;"></i>
+                        </div>
+                        <?php endif; ?>
+                    </div>
+                    <!-- Edit Mode -->
+                    <textarea id="edit_keterangan" name="keterangan" class="premium-input" placeholder="Tulis catatan umum pengecekkan disini..." style="height: 120px; display: none;"><?= htmlspecialchars($keterangan_umum ?? '') ?></textarea>
                 </div>
 
                 <!-- CONDITIONAL FORM -->
-                <div id="extraForm" class="alert-box <?= ($current_status != 'O') ? 'active' : '' ?>">
-                    <div class="alert-title">
-                        <i class="fa-solid fa-clipboard-question"></i> FORM PENGISIAN KONDISI
-                    </div>
-                    
+                <div id="extraForm" style="margin-top: 20px; display: none;"> 
                     <div class="form-group">
-                        <label style="color: #881337;">Deskripsi Permasalahan & Temuan</label>
-                        <textarea name="keterangan_masalah" class="premium-input" 
+                         <label style="color: #b91c1c;">Deskripsi Permasalahan & Temuan</label>
+                         
+                         <!-- View Mode -->
+                        <div id="view_masalah" class="premium-input" style="min-height: 60px; background: #fff1f2; border: 1px solid #fda4af; cursor: default; position: relative;">
+                            <?= nl2br(htmlspecialchars($keterangan_masalah ?? '')) ?: '<span style="color:#94a3b8; font-style:italic;">Belum ada deskripsi masalah.</span>' ?>
+                            <?php if ($is_today): ?>
+                            <div onclick="toggleEdit('masalah')" style="position: absolute; top: 10px; right: 10px; cursor: pointer; color: #b91c1c; background: rgba(185,28,28,0.1); width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">
+                                <i class="fa-solid fa-pen" style="font-size: 12px;"></i>
+                            </div>
+                            <?php endif; ?>
+                        </div>
+
+                        <!-- Edit Mode -->
+                        <textarea id="edit_masalah" name="keterangan_masalah" class="premium-input" 
                             placeholder="Jelaskan secara detail: Gejala kerusakan, parameter yang tidak normal, dll..." 
-                            style="height: 150px; border-color: #fda4af; background: white;" <?= $is_today ? '' : 'readonly' ?>></textarea>
+                            style="height: 150px; border-color: #fda4af; display: none;"><?= htmlspecialchars($keterangan_masalah ?? '') ?></textarea>
                     </div>
                 </div>
 
@@ -577,20 +674,31 @@ if ($inspection) {
                     <div class="photo-grid" id="newPhotoGrid">
                         <!-- Existing Photos -->
                          <?php foreach ($photos as $ph): ?>
-                            <div class="photo-thumb">
-                                <img src="../<?= $ph['foto_path'] ?>">
+                            <div class="photo-thumb" style="position:relative;">
+                                <img src="<?= $ph['foto_path'] ?>">
+                                <!-- Delete Button -->
+                                <button type="button" 
+                                    onclick="deletePhoto(<?= $ph['id'] ?>)"
+                                    style="position:absolute; top:-5px; right:-5px; background:red; color:white; border:none; border-radius:50%; width:20px; height:20px; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+                                    <i class="fa-solid fa-times" style="font-size: 12px;"></i>
+                                </button>
                             </div>
                         <?php endforeach; ?>
                     </div>
                 </div>
 
                 <?php if ($is_today): ?>
-                <button type="submit" name="save_detail" class="save-btn">
+                <button type="button" onclick="confirmSave()" class="save-btn">
                     <i class="fa-solid fa-save"></i> SIMPAN PERUBAHAN
                 </button>
                 <?php endif; ?>
 
             </div>
+        </form>
+        
+         <!-- Hidden Form for Deletion -->
+        <form id="deletePhotoForm" method="POST" style="display:none;">
+            <input type="hidden" name="delete_photo_id" id="delete_photo_id_input">
         </form>
     </div>
 </div>
@@ -603,10 +711,51 @@ if ($inspection) {
         // Toggle Conditional Form
         const form = document.getElementById('extraForm');
         if (startNode.value !== 'O') {
-            form.classList.add('active');
+            form.style.display = 'block';
         } else {
-            form.classList.remove('active');
+             // Check if there is content in the textarea OR view div (since we might have content but empty textarea if not edited yet? no, textarea has content)
+            // Actually check the PHP value rendered into textarea
+            const problemText = document.getElementById('edit_masalah').value.trim();
+            if (problemText.length > 0) {
+                 form.style.display = 'block';
+            } else {
+                 form.style.display = 'none';
+            }
         }
+    }
+
+    function toggleEdit(type) {
+        if (type === 'keterangan') {
+            document.getElementById('view_keterangan').style.display = 'none';
+            document.getElementById('edit_keterangan').style.display = 'block';
+            document.getElementById('edit_keterangan').focus();
+        } else if (type === 'masalah') {
+            document.getElementById('view_masalah').style.display = 'none';
+            document.getElementById('edit_masalah').style.display = 'block';
+            document.getElementById('edit_masalah').focus();
+        }
+    }
+
+    function deletePhoto(id) {
+        Swal.fire({
+            title: 'Hapus Foto?',
+            text: "Foto akan dihapus permanen.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal',
+            width: '320px', // Compact size
+            customClass: {
+                popup: 'small-swal-popup'
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                document.getElementById('delete_photo_id_input').value = id;
+                document.getElementById('deletePhotoForm').submit();
+            }
+        });
     }
 
     function previewPhotos(input) {
@@ -626,6 +775,30 @@ if ($inspection) {
     
     // Initial check
     updateStatus(document.querySelector('input[name="status_visible"]:checked') || {value: '<?= $current_status ?>'});
+
+    function confirmSave() {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                title: 'Apakah anda yakin?',
+                text: "Pastikan data status dan keterangan sudah benar.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#087F8A',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Ya, Simpan!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('detailForm').submit();
+                }
+            });
+        } else {
+            // Fallback for offline/error
+            if (confirm("Apakah anda yakin data sudah benar?")) {
+                document.getElementById('detailForm').submit();
+            }
+        }
+    }
 </script>
 
 </body>

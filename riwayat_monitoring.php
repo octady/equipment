@@ -14,12 +14,20 @@ $selected_date = $_GET['date'] ?? date('Y-m-d');
 $is_today = ($selected_date === date('Y-m-d'));
 
 $filter_search = $_GET['search'] ?? '';
-$filter_category = $_GET['category'] ?? '';
+$filter_location = $_GET['lokasi'] ?? '';
+$filter_status = $_GET['status'] ?? ''; // Changed from category to status
 $filter_section = $_GET['section'] ?? '';
 $filter_equipment = $_GET['equipment'] ?? '';
 $filter_inspector = $_GET['inspector'] ?? ''; 
 
 // 2. Fetch Master Data for Filters
+// Locations (New)
+$locations_list = [];
+$res_loc = $conn->query("SELECT id, nama_lokasi FROM lokasi ORDER BY nama_lokasi");
+while($r = $res_loc->fetch_assoc()) {
+    $locations_list[] = $r;
+}
+
 // Sections
 $sections_list = [];
 $res_sec = $conn->query("SELECT id, nama_section, parent_category FROM sections ORDER BY parent_category, urutan");
@@ -45,11 +53,17 @@ $sql = "SELECT
             i.status,
             i.keterangan,
             i.checked_by,
-            i.created_at
+            i.created_at,
+            ip.foto_path
         FROM equipments e
         JOIN sections s ON e.section_id = s.id
         JOIN lokasi l ON e.lokasi_id = l.id
         JOIN inspections_daily i ON e.id = i.equipment_id AND i.tanggal = ?
+        LEFT JOIN (
+            SELECT inspection_id, MAX(foto_path) as foto_path 
+            FROM inspection_photos 
+            GROUP BY inspection_id
+        ) ip ON i.id = ip.inspection_id
         WHERE 1=1";
 
 $types = "s";
@@ -61,10 +75,16 @@ if ($filter_search) {
     $params[] = "%$filter_search%";
 }
 
-if ($filter_category) {
-    $sql .= " AND s.parent_category = ?";
+if ($filter_location) { 
+    $sql .= " AND l.id = ?";
+    $types .= "s"; // Changed to 's' for safety (handles int/string)
+    $params[] = $filter_location;
+}
+
+if ($filter_status) {
+    $sql .= " AND i.status = ?";
     $types .= "s";
-    $params[] = $filter_category;
+    $params[] = $filter_status;
 }
 
 if ($filter_section) {
@@ -82,7 +102,27 @@ if ($filter_equipment) {
 $sql .= " ORDER BY s.parent_category, s.urutan, e.nama_peralatan";
 
 $stmt = $conn->prepare($sql);
-$stmt->bind_param($types, ...$params);
+
+// Bind Param Fix: Ensure params are references
+if (!empty($params)) {
+    // Create an array of references
+    $bind_params = [];
+    foreach ($params as $key => $value) {
+        $bind_params[$key] = &$params[$key];
+    }
+    // Bind
+    $stmt->bind_param($types, ...$bind_params);
+} else {
+    // Should not happen as we always have $selected_date
+}
+
+// DEBUG LOGGING
+$log_msg = "Date: " . date('Y-m-d H:i:s') . "\n";
+$log_msg .= "GET: " . print_r($_GET, true) . "\n";
+$log_msg .= "SQL: " . $sql . "\n";
+$log_msg .= "Params: " . print_r($params, true) . "\n";
+file_put_contents('debug_log.txt', $log_msg, FILE_APPEND);
+
 $stmt->execute();
 $result = $stmt->get_result();
 
@@ -197,10 +237,10 @@ $current_page = basename($_SERVER['PHP_SELF']);
             border: 1px solid var(--border-light);
         }
 
-        /* Filter Grid System - 5 Columns + Reset */
+        /* Filter Grid System - Updated for new column */
         .filter-row {
             display: grid;
-            grid-template-columns: 1.2fr 1.5fr 1.2fr 1.2fr 1.5fr auto;
+            grid-template-columns: 1.2fr 1.5fr 1.2fr 1.2fr 1.2fr 1.5fr auto; /* Added one more 1.2fr column */
             gap: 16px;
             align-items: end;
         }
@@ -535,14 +575,6 @@ $current_page = basename($_SERVER['PHP_SELF']);
 
 <main class="main-content">
     
-    <!-- Date Header -->
-    <div class="page-header">
-        <div class="date-display">
-            <h1>RIWAYAT MONITORING</h1>
-            <p><i class="fa-solid fa-clipboard-list"></i> Laporan Harian & Status Pengecekkan</p>
-        </div>
-    </div>
-
     <!-- Filters -->
     <div class="control-panel">
         <form method="GET" action="" id="filterForm">
@@ -553,19 +585,34 @@ $current_page = basename($_SERVER['PHP_SELF']);
                     <input type="date" name="date" value="<?= $selected_date ?>" onchange="this.form.submit()" max="<?= date('Y-m-d') ?>">
                 </div>
 
-                <!-- Text Search -->
+                <!-- Text Search (Live Search) -->
                 <div class="filter-group">
                     <label><i class="fa-solid fa-search"></i> Cari</label>
-                    <input type="text" name="search" value="<?= htmlspecialchars($filter_search) ?>" placeholder="Nama peralatan..." onchange="this.form.submit()">
+                    <input type="text" id="searchInput" name="search" value="<?= htmlspecialchars($filter_search) ?>" placeholder="Nama peralatan..." autocomplete="off">
                 </div>
 
-                <!-- Category Filter -->
+                <!-- NEW: Filter Location -->
                 <div class="filter-group">
-                    <label><i class="fa-solid fa-layer-group"></i> Kategori</label>
-                    <select name="category" onchange="this.form.submit()">
-                        <option value="">Semua Kategori</option>
-                        <option value="MECHANICAL" <?= $filter_category == 'MECHANICAL' ? 'selected' : '' ?>>Mechanical</option>
-                        <option value="ELECTRICAL" <?= $filter_category == 'ELECTRICAL' ? 'selected' : '' ?>>Electrical</option>
+                    <label><i class="fa-solid fa-map-marker-alt"></i> Lokasi</label>
+                    <select name="lokasi" onchange="this.form.submit()">
+                        <option value="">Semua Lokasi</option>
+                        <?php foreach($locations_list as $loc): ?>
+                        <option value="<?= $loc['id'] ?>" <?= $filter_location == $loc['id'] ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($loc['nama_lokasi']) ?>
+                        </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+                <!-- Status Filter (Replaces Category) -->
+                <div class="filter-group">
+                    <label><i class="fa-solid fa-filter"></i> Status</label>
+                    <select name="status" onchange="this.form.submit()">
+                        <option value="">Semua Status</option>
+                        <option value="O" <?= $filter_status == 'O' ? 'selected' : '' ?>>Normal</option>
+                        <option value="-" <?= $filter_status == '-' ? 'selected' : '' ?>>Menurun</option>
+                        <option value="X" <?= $filter_status == 'X' ? 'selected' : '' ?>>Terputus</option>
+                        <option value="V" <?= $filter_status == 'V' ? 'selected' : '' ?>>Gangguan</option>
                     </select>
                 </div>
 
@@ -575,11 +622,9 @@ $current_page = basename($_SERVER['PHP_SELF']);
                     <select name="section" onchange="this.form.submit()">
                         <option value="">Semua Jenis</option>
                         <?php foreach($sections_list as $sec): ?>
-                            <?php if(!$filter_category || $sec['parent_category'] == $filter_category): ?>
                             <option value="<?= $sec['id'] ?>" <?= $filter_section == $sec['id'] ? 'selected' : '' ?>>
                                 <?= htmlspecialchars($sec['nama_section']) ?>
                             </option>
-                            <?php endif; ?>
                         <?php endforeach; ?>
                     </select>
                 </div>
@@ -687,8 +732,32 @@ $current_page = basename($_SERVER['PHP_SELF']);
         </form>
     </div>
 
+    <style>
+    /* ... existing styles ... */
+    .btn-action-edit {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        background-color: #0ea5e9;
+        color: white;
+        text-decoration: none;
+        transition: all 0.2s;
+        border: none;
+        cursor: pointer;
+    }
+    .btn-action-edit:hover {
+        background-color: #0284c7;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        color: white;
+    }
+    </style>
+
     <!-- MECHANICAL Table -->
-    <?php if (!$filter_category || $filter_category == 'MECHANICAL'): ?>
+    <?php if (true): // Always show mechanical unless filtered out by status (logic handled in query) ?>
     <div class="category-section">
         <div class="category-title">
             <span><i class="fa-solid fa-gears"></i> MECHANICAL</span>
@@ -699,43 +768,57 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <table>
                     <thead>
                         <tr>
-                            <th style="width: 25%;">Nama Peralatan</th>
+                            <th style="width: 20%;">Nama Peralatan</th>
                             <th style="width: 15%;">Lokasi</th>
+                            <th style="width: 10%; text-align: center;">Foto</th>
                             <th style="width: 15%;">Status</th>
-
-
-
+                            <?php if($is_today): ?>
+                            <th style="width: 10%; text-align: center;">Aksi</th>
+                            <?php endif; ?>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody class="equipment-list">
                         <?php if (count($data['MECHANICAL']) > 0): ?>
                             <?php foreach ($data['MECHANICAL'] as $item): ?>
-                            <tr onclick="window.location.href='detail_monitoring_user.php?id=<?= $item['equipment_id'] ?>&date=<?= $selected_date ?>'" style="cursor: pointer; transition: background-color 0.2s;">
-                                <td>
-                                    <div style="font-weight: 600; color: #334155;"><?= htmlspecialchars($item['nama_peralatan']) ?></div>
+                            <tr class="equipment-row" onclick="window.location.href='detail_monitoring_user.php?id=<?= $item['equipment_id'] ?>&date=<?= $selected_date ?>'" style="cursor: pointer; transition: background-color 0.2s;">
+                                <td class="eq-name-cell">
+                                    <div style="font-weight: 600; color: #334155;" class="eq-name"><?= htmlspecialchars($item['nama_peralatan']) ?></div>
                                     <div style="font-size: 12px; color: #94a3b8; margin-top: 2px;"><?= htmlspecialchars($item['nama_section']) ?></div>
                                 </td>
                                 <td><?= htmlspecialchars($item['nama_lokasi']) ?></td>
+                                <td style="text-align: center;">
+                                    <?php if (!empty($item['foto_path']) && file_exists($item['foto_path'])): ?>
+                                        <a href="<?= $item['foto_path'] ?>" target="_blank" onclick="event.stopPropagation()">
+                                            <img src="<?= $item['foto_path'] ?>" style="width: 40px; height: 40px; object-fit: cover; border-radius: 6px; border: 1px solid #e2e8f0;">
+                                        </a>
+                                    <?php else: ?>
+                                        <span style="color: #cbd5e1; font-size: 18px;"><i class="fa-solid fa-image"></i></span>
+                                    <?php endif; ?>
+                                </td>
                                 <td>
                                     <?php if ($item['status'] == 'O'): ?>
                                         <span class="badge badge-success"><i class="fa-solid fa-check-circle"></i> Normal</span>
                                     <?php elseif ($item['status'] == 'X'): ?>
-                                        <span class="badge badge-danger"><i class="fa-solid fa-circle-exclamation"></i> Rusak</span>
+                                        <span class="badge badge-danger"><i class="fa-solid fa-circle-exclamation"></i> Terputus</span>
                                     <?php elseif ($item['status'] == 'V'): ?>
-                                        <span class="badge badge-info"><i class="fa-solid fa-triangle-exclamation"></i> Standby</span>
+                                        <span class="badge badge-info"><i class="fa-solid fa-triangle-exclamation"></i> Gangguan</span>
                                     <?php elseif ($item['status'] == '-'): ?>
                                         <span class="badge badge-warning"><i class="fa-solid fa-arrow-trend-down"></i> Menurun</span>
                                     <?php else: ?>
                                         <span class="badge badge-neutral"><i class="fa-regular fa-circle"></i> Belum Dicek</span>
                                     <?php endif; ?>
                                 </td>
-
-
-
+                                <?php if($is_today): ?>
+                                <td style="text-align: center;">
+                                    <a href="detail_monitoring_user.php?id=<?= $item['equipment_id'] ?>&date=<?= $selected_date ?>" class="btn-action-edit" title="Edit Data" onclick="event.stopPropagation()">
+                                        <i class="fa-solid fa-pen-to-square"></i>
+                                    </a>
+                                </td>
+                                <?php endif; ?>
                             </tr>
                             <?php endforeach; ?>
                         <?php else: ?>
-                            <tr><td colspan="6" style="text-align: center; padding: 20px;">Tidak ada data mechanical yang ditemukan.</td></tr>
+                            <tr><td colspan="<?= $is_today ? 4 : 3 ?>" style="text-align: center; padding: 20px;">Tidak ada data mechanical yang ditemukan.</td></tr>
                         <?php endif; ?>
                     </tbody>
                 </table>
@@ -745,7 +828,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
     <?php endif; ?>
 
     <!-- ELECTRICAL Table -->
-    <?php if (!$filter_category || $filter_category == 'ELECTRICAL'): ?>
+    <?php if (true): // Always show electrical unless filtered out by status (logic handled in query) ?>
     <div class="category-section">
         <div class="category-title">
             <span><i class="fa-solid fa-bolt"></i> ELECTRICAL</span>
@@ -756,41 +839,57 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <table>
                     <thead>
                         <tr>
-                            <th style="width: 25%;">Nama Peralatan</th>
+                            <th style="width: 20%;">Nama Peralatan</th>
                             <th style="width: 15%;">Lokasi</th>
+                            <th style="width: 10%; text-align: center;">Foto</th>
                             <th style="width: 15%;">Status</th>
-
-
-
+                            <?php if($is_today): ?>
+                            <th style="width: 10%; text-align: center;">Aksi</th>
+                            <?php endif; ?>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody class="equipment-list">
                         <?php if (count($data['ELECTRICAL']) > 0): ?>
                             <?php foreach ($data['ELECTRICAL'] as $item): ?>
-                            <tr onclick="window.location.href='detail_monitoring_user.php?id=<?= $item['equipment_id'] ?>&date=<?= $selected_date ?>'" style="cursor: pointer; transition: background-color 0.2s;">
-                                <td>
-                                    <div style="font-weight: 600; color: #334155;"><?= htmlspecialchars($item['nama_peralatan']) ?></div>
+                            <tr class="equipment-row" onclick="window.location.href='detail_monitoring_user.php?id=<?= $item['equipment_id'] ?>&date=<?= $selected_date ?>'" style="cursor: pointer; transition: background-color 0.2s;">
+                                <td class="eq-name-cell">
+                                    <div style="font-weight: 600; color: #334155;" class="eq-name"><?= htmlspecialchars($item['nama_peralatan']) ?></div>
                                     <div style="font-size: 12px; color: #94a3b8; margin-top: 2px;"><?= htmlspecialchars($item['nama_section']) ?></div>
                                 </td>
                                 <td><?= htmlspecialchars($item['nama_lokasi']) ?></td>
+                                <td style="text-align: center;">
+                                    <?php if (!empty($item['foto_path']) && file_exists($item['foto_path'])): ?>
+                                        <a href="<?= $item['foto_path'] ?>" target="_blank" onclick="event.stopPropagation()">
+                                            <img src="<?= $item['foto_path'] ?>" style="width: 40px; height: 40px; object-fit: cover; border-radius: 6px; border: 1px solid #e2e8f0;">
+                                        </a>
+                                    <?php else: ?>
+                                        <span style="color: #cbd5e1; font-size: 18px;"><i class="fa-solid fa-image"></i></span>
+                                    <?php endif; ?>
+                                </td>
                                 <td>
                                     <?php if ($item['status'] == 'O'): ?>
                                         <span class="badge badge-success"><i class="fa-solid fa-check-circle"></i> Normal</span>
                                     <?php elseif ($item['status'] == 'X'): ?>
-                                        <span class="badge badge-danger"><i class="fa-solid fa-circle-exclamation"></i> Rusak</span>
+                                        <span class="badge badge-danger"><i class="fa-solid fa-circle-exclamation"></i> Terputus</span>
                                     <?php elseif ($item['status'] == 'V'): ?>
-                                        <span class="badge badge-warning"><i class="fa-solid fa-triangle-exclamation"></i> Standby</span>
+                                        <span class="badge badge-info"><i class="fa-solid fa-triangle-exclamation"></i> Gangguan</span>
+                                    <?php elseif ($item['status'] == '-'): ?>
+                                        <span class="badge badge-warning"><i class="fa-solid fa-arrow-trend-down"></i> Menurun</span>
                                     <?php else: ?>
                                         <span class="badge badge-neutral"><i class="fa-regular fa-circle"></i> Belum Dicek</span>
                                     <?php endif; ?>
                                 </td>
-
-
-
+                                <?php if($is_today): ?>
+                                <td style="text-align: center;">
+                                    <a href="detail_monitoring_user.php?id=<?= $item['equipment_id'] ?>&date=<?= $selected_date ?>" class="btn-action-edit" title="Edit Data" onclick="event.stopPropagation()">
+                                        <i class="fa-solid fa-pen-to-square"></i>
+                                    </a>
+                                </td>
+                                <?php endif; ?>
                             </tr>
                             <?php endforeach; ?>
                         <?php else: ?>
-                            <tr><td colspan="6" style="text-align: center; padding: 20px;">Tidak ada data electrical yang ditemukan.</td></tr>
+                            <tr><td colspan="<?= $is_today ? 4 : 3 ?>" style="text-align: center; padding: 20px;">Tidak ada data electrical yang ditemukan.</td></tr>
                         <?php endif; ?>
                     </tbody>
                 </table>
@@ -801,8 +900,28 @@ $current_page = basename($_SERVER['PHP_SELF']);
 
 </main>
 
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const rows = document.querySelectorAll('.equipment-row');
 
-
-
+    if(searchInput) {
+        searchInput.addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            
+            rows.forEach(row => {
+                const nameElement = row.querySelector('.eq-name');
+                const name = nameElement ? nameElement.textContent.toLowerCase() : '';
+                
+                if(name.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    }
+});
+</script>
 </body>
 </html>

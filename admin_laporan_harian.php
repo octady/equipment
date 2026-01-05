@@ -17,11 +17,20 @@ $selected_date = $_GET['date'] ?? date('Y-m-d');
 $is_today = ($selected_date === date('Y-m-d'));
 
 $filter_search = $_GET['search'] ?? '';
-$filter_category = $_GET['category'] ?? '';
+$filter_location = $_GET['lokasi'] ?? '';
+$filter_status = $_GET['status'] ?? '';
 $filter_section = $_GET['section'] ?? '';
 $filter_equipment = $_GET['equipment'] ?? '';
 
+
 // 2. Fetch Master Data for Filters
+// Locations (New)
+$locations_list = [];
+$res_loc = $conn->query("SELECT id, nama_lokasi FROM lokasi ORDER BY nama_lokasi");
+while($r = $res_loc->fetch_assoc()) {
+    $locations_list[] = $r;
+}
+
 $sections_list = [];
 $res_sec = $conn->query("SELECT id, nama_section, parent_category FROM sections ORDER BY parent_category, urutan");
 while($r = $res_sec->fetch_assoc()) {
@@ -45,7 +54,8 @@ $sql = "SELECT
             i.status,
             i.keterangan,
             i.checked_by,
-            i.created_at
+            i.created_at,
+            (SELECT foto_path FROM inspection_photos WHERE inspection_id = i.id LIMIT 1) as foto_path
         FROM equipments e
         JOIN sections s ON e.section_id = s.id
         JOIN lokasi l ON e.lokasi_id = l.id
@@ -61,10 +71,20 @@ if ($filter_search) {
     $params[] = "%$filter_search%";
 }
 
-if ($filter_category) {
-    $sql .= " AND s.parent_category = ?";
+if ($filter_location) { 
+    $sql .= " AND l.id = ?";
     $types .= "s";
-    $params[] = $filter_category;
+    $params[] = $filter_location;
+}
+
+$filter_status = $_GET['status'] ?? '';
+
+// ... (other filters)
+
+if ($filter_status) {
+    $sql .= " AND i.status = ?";
+    $types .= "s";
+    $params[] = $filter_status;
 }
 
 if ($filter_section) {
@@ -178,8 +198,8 @@ while ($row = $result->fetch_assoc()) {
         /* Filter Grid System */
         .filter-row {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
+            grid-template-columns: 1.2fr 1.5fr 1.2fr 1.2fr 1.2fr 1.5fr auto;
+            gap: 16px;
             align-items: end;
         }
 
@@ -419,7 +439,48 @@ while ($row = $result->fetch_assoc()) {
                 padding: 0 10px;
             }
         }
+        
+        .btn-action-edit {
+            background-color: var(--brand-primary);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .btn-action-edit:hover {
+            background-color: var(--brand-primary-dark);
+            transform: translateY(-1px);
+        }
     </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+             const searchInput = document.getElementById('searchInput');
+             if(searchInput) {
+                 searchInput.addEventListener('input', function() {
+                     const filter = this.value.toLowerCase();
+                     const rows = document.querySelectorAll('.data-row'); // Need to add class to tr
+                     
+                     rows.forEach(row => {
+                         const eqName = row.getAttribute('data-eq-name').toLowerCase();
+                         if(eqName.includes(filter)) {
+                             row.style.display = '';
+                         } else {
+                             row.style.display = 'none';
+                         }
+                     });
+                 });
+             }
+        });
+    </script>
 </head>
 <body>
     <?php include 'includes/admin_sidebar.php'; ?>
@@ -428,9 +489,7 @@ while ($row = $result->fetch_assoc()) {
         <div class="container">
         
         <div style="display: flex; justify-content: flex-end; margin-bottom: 0px; gap: 10px;">
-             <a href="export/export_excel.php?type=daily&date=<?= $selected_date ?>" class="btn-reset" style="background: #10b981; padding: 8px 15px; font-size: 12px; border:none; color: white; font-weight:600;">
-                <i class="fa-solid fa-file-excel"></i> Export Excel
-             </a>
+
              <a href="admin_laporan_bulanan.php" class="btn-reset" style="background: white; padding: 8px 15px; font-size: 12px; border:1px solid #e2e8f0; color: #087F8A; font-weight:600;">
                 <i class="fa-solid fa-calendar-days"></i> Lihat Laporan Bulanan
              </a>
@@ -452,19 +511,34 @@ while ($row = $result->fetch_assoc()) {
                         <input type="date" name="date" value="<?= $selected_date ?>" onchange="this.form.submit()" max="<?= date('Y-m-d') ?>">
                     </div>
 
-                    <!-- Text Search -->
+                    <!-- Text Search (Live Search) -->
                     <div class="filter-group">
                         <label><i class="fa-solid fa-search"></i> Cari</label>
-                        <input type="text" name="search" value="<?= htmlspecialchars($filter_search) ?>" placeholder="Nama peralatan..." onchange="this.form.submit()">
+                        <input type="text" id="searchInput" name="search" value="<?= htmlspecialchars($filter_search) ?>" placeholder="Nama peralatan..." autocomplete="off">
                     </div>
 
-                    <!-- Category Filter -->
+                    <!-- NEW: Filter Location -->
                     <div class="filter-group">
-                        <label><i class="fa-solid fa-layer-group"></i> Kategori</label>
-                        <select name="category" onchange="this.form.submit()">
-                            <option value="">Semua Kategori</option>
-                            <option value="MECHANICAL" <?= $filter_category == 'MECHANICAL' ? 'selected' : '' ?>>Mechanical</option>
-                            <option value="ELECTRICAL" <?= $filter_category == 'ELECTRICAL' ? 'selected' : '' ?>>Electrical</option>
+                        <label><i class="fa-solid fa-map-marker-alt"></i> Lokasi</label>
+                        <select name="lokasi" onchange="this.form.submit()">
+                            <option value="">Semua Lokasi</option>
+                            <?php foreach($locations_list as $loc): ?>
+                            <option value="<?= $loc['id'] ?>" <?= $filter_location == $loc['id'] ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($loc['nama_lokasi']) ?>
+                            </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <!-- Status Filter -->
+                    <div class="filter-group">
+                        <label><i class="fa-solid fa-filter"></i> Status</label>
+                        <select name="status" onchange="this.form.submit()">
+                            <option value="">Semua Status</option>
+                            <option value="O" <?= $filter_status == 'O' ? 'selected' : '' ?>>Normal</option>
+                            <option value="-" <?= $filter_status == '-' ? 'selected' : '' ?>>Menurun</option>
+                            <option value="X" <?= $filter_status == 'X' ? 'selected' : '' ?>>Terputus</option>
+                            <option value="V" <?= $filter_status == 'V' ? 'selected' : '' ?>>Gangguan</option>
                         </select>
                     </div>
 
@@ -474,11 +548,9 @@ while ($row = $result->fetch_assoc()) {
                         <select name="section" onchange="this.form.submit()">
                             <option value="">Semua Jenis</option>
                             <?php foreach($sections_list as $sec): ?>
-                                <?php if(!$filter_category || $sec['parent_category'] == $filter_category): ?>
                                 <option value="<?= $sec['id'] ?>" <?= $filter_section == $sec['id'] ? 'selected' : '' ?>>
                                     <?= htmlspecialchars($sec['nama_section']) ?>
                                 </option>
-                                <?php endif; ?>
                             <?php endforeach; ?>
                         </select>
                     </div>
@@ -556,12 +628,14 @@ while ($row = $result->fetch_assoc()) {
                                 <tr>
                                     <th>Nama Peralatan</th>
                                     <th>Lokasi</th>
+                                    <th style="text-align: center;">Foto</th>
                                     <th style="text-align: center;">Status</th>
+                                    <th style="text-align: center;">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php foreach($data[$cat] as $row): ?>
-                                <tr class="clickable-row" onclick="window.location.href='admin_detail_monitoring.php?id=<?= $row['equipment_id'] ?>&date=<?= $selected_date ?>'">
+                                <tr class="clickable-row data-row" data-eq-name="<?= htmlspecialchars($row['nama_peralatan']) ?>" onclick="window.location.href='admin_detail_monitoring.php?id=<?= $row['equipment_id'] ?>&date=<?= $selected_date ?>'">
                                     <td>
                                         <div><?= htmlspecialchars($row['nama_peralatan']) ?></div>
                                         <div class="text-secondary" style="font-size: 12px; color: #94a3b8; font-weight: 400; margin-top:2px;">
@@ -575,17 +649,31 @@ while ($row = $result->fetch_assoc()) {
                                         </div>
                                     </td>
                                     <td style="text-align: center;">
+                                        <?php if (!empty($row['foto_path']) && file_exists($row['foto_path'])): ?>
+                                            <a href="<?= $row['foto_path'] ?>" target="_blank" onclick="event.stopPropagation()">
+                                                <img src="<?= $row['foto_path'] ?>" style="width: 40px; height: 40px; object-fit: cover; border-radius: 6px; border: 1px solid #e2e8f0;">
+                                            </a>
+                                        <?php else: ?>
+                                            <span style="color: #cbd5e1; font-size: 18px;"><i class="fa-solid fa-image"></i></span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td style="text-align: center;">
                                         <?php if($row['status'] == 'O'): ?>
                                             <span class="badge badge-success">Normal</span>
                                         <?php elseif($row['status'] == 'X'): ?>
-                                            <span class="badge badge-danger">Rusak</span>
+                                            <span class="badge badge-danger">Terputus</span>
                                         <?php elseif($row['status'] == 'V'): ?>
-                                            <span class="badge badge-info">Standby</span>
+                                            <span class="badge badge-warning">Gangguan</span>
                                         <?php elseif($row['status'] == '-'): ?>
                                             <span class="badge badge-warning">Menurun</span>
                                         <?php else: ?>
                                             <span class="badge badge-neutral">Belum</span>
                                         <?php endif; ?>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <a href="admin_detail_monitoring.php?id=<?= $row['equipment_id'] ?>&date=<?= $selected_date ?>" class="btn-action-edit" onclick="event.stopPropagation()">
+                                            <i class="fa-solid fa-pen-to-square"></i> Edit
+                                        </a>
                                     </td>
                                 </tr>
                                 <?php endforeach; ?>
