@@ -1124,12 +1124,12 @@ body {
                                 <p>Cek hasil monitoring sebelumnya</p>
                             </div>
                         </a>
-                        <a href="#" class="quick-action-btn">
+                        <a href="download_laporan.php" class="quick-action-btn">
                             <div class="quick-action-icon">
                                 <i class="fas fa-chart-bar"></i>
                             </div>
                             <div class="quick-action-content">
-                                <h4>Laporan</h4>
+                                <h4>Download Laporan</h4>
                                 <p>Export laporan monitoring</p>
                             </div>
                         </a>

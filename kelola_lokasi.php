@@ -288,6 +288,27 @@ $total_equipment = array_sum(array_column($data, 'equipment_count'));
             background: #f3e8ff;
             color: #a855f7;
         }
+        
+        /* Action Buttons Professional Style */
+        .action-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 14px;
+            text-decoration: none;
+        }
+
+        .btn-edit { background: #e0f2fe; color: #0284c7; }
+        .btn-edit:hover { background: #0284c7; color: white; }
+
+        .btn-delete { background: #fee2e2; color: #ef4444; }
+        .btn-delete:hover { background: #ef4444; color: white; }
     </style>
 </head>
 
@@ -364,8 +385,12 @@ $total_equipment = array_sum(array_column($data, 'equipment_count'));
                                     <?= $l['equipment_count'] ?>
                                 </span></td>
                             <td class="actions">
-                                <button onclick="edit(<?= $l['id'] ?>)">✏️</button>
-                                <button onclick="hapus(<?= $l['id'] ?>)">🗑️</button>
+                                <button onclick="edit(<?= $l['id'] ?>)" class="action-btn btn-edit" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button onclick="hapus(<?= $l['id'] ?>)" class="action-btn btn-delete" title="Hapus">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
                             </td>
                         </tr>
                     <?php endforeach ?>
