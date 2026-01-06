@@ -588,11 +588,23 @@ input[type="password"]::-webkit-clear-button {
         font-size: 20px;
     }
 }
+
+.supergrafis-decoration {
+    position: absolute;
+    bottom: -180px; 
+    left: -180px;
+    width: 600px; 
+    max-width: 70vw;
+    z-index: 0; 
+    opacity: 1;
+    pointer-events: none;
+}
 </style>
 </head>
 <body>
 
 <div class="login-container">
+    <img src="assets/img/Supergrafis.png?v=<?php echo time(); ?>" alt="Decoration" class="supergrafis-decoration">
     <!-- LEFT SECTION -->
     <div class="left-section">
         <div class="logo-container">
@@ -650,7 +662,7 @@ input[type="password"]::-webkit-clear-button {
                 <div class="form-group">
                     <i class="fas fa-lock input-icon"></i>
                     <input type="password" class="form-control" id="password" name="password" placeholder="Password" required>
-                    <i class="fas fa-eye-slash password-toggle" id="togglePassword"></i>
+                    <i class="fas fa-eye password-toggle" id="togglePassword"></i>
                 </div>
 
                 <button type="submit" class="btn-login">
@@ -679,12 +691,12 @@ const passwordInput = document.getElementById('password');
 togglePassword.addEventListener('click', function() {
     if (passwordInput.getAttribute('type') === 'password') {
         passwordInput.setAttribute('type', 'text');
-        this.classList.remove('fa-eye-slash');
-        this.classList.add('fa-eye');
-    } else {
-        passwordInput.setAttribute('type', 'password');
         this.classList.remove('fa-eye');
         this.classList.add('fa-eye-slash');
+    } else {
+        passwordInput.setAttribute('type', 'password');
+        this.classList.remove('fa-eye-slash');
+        this.classList.add('fa-eye');
     }
 });
 
