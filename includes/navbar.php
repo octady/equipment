@@ -24,6 +24,9 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <li class="nav-item <?= ($current_page == 'riwayat_monitoring.php') ? 'active' : '' ?>">
                     <a href="riwayat_monitoring.php">Riwayat Monitoring</a>
                 </li>
+                <li class="nav-item <?= ($current_page == 'form_laporan.php') ? 'active' : '' ?>">
+                    <a href="form_laporan.php">Form Laporan</a>
+                </li>
                 <li class="nav-item <?= ($current_page == 'form_inspeksi.php') ? 'active' : '' ?>">
                     <a href="form_inspeksi.php">Inspeksi dan Pengujian</a>
                 </li>
