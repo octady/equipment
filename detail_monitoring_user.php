@@ -592,7 +592,7 @@ if ($inspection) {
                         <input type="radio" name="status_visible" value="V" style="display:none;" <?= $current_status == 'V' ? 'checked' : '' ?> <?= $is_today ? 'onchange="updateStatus(this)"' : 'disabled' ?>>
                         <div class="status-radio-label s-V">
                             <div class="status-icon">V</div>
-                            <div class="status-text">Standby / Gangguan</div>
+                            <div class="status-text">Gangguan</div>
                             <div class="check-mark"><i class="fa-solid fa-circle-check"></i></div>
                         </div>
                     </label>
@@ -602,7 +602,7 @@ if ($inspection) {
                         <input type="radio" name="status_visible" value="X" style="display:none;" <?= $current_status == 'X' ? 'checked' : '' ?> <?= $is_today ? 'onchange="updateStatus(this)"' : 'disabled' ?>>
                         <div class="status-radio-label s-X">
                             <div class="status-icon">X</div>
-                            <div class="status-text">Rusak Total</div>
+                            <div class="status-text">Terputus</div>
                             <div class="check-mark"><i class="fa-solid fa-circle-check"></i></div>
                         </div>
                     </label>

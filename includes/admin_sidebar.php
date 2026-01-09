@@ -1,5 +1,14 @@
 <?php
 // Admin Sidebar Component - Push Layout with Toggle
+$current_page = basename($_SERVER['PHP_SELF']);
+$is_laporan_pengukuran = in_array($current_page, ['admin_laporan_pengukuran.php', 'form_laporan.php', 'view_laporan_pengukuran.php', 'admin_form_laporan.php']);
+$is_dashboard = ($current_page == 'admin_dashboard.php');
+$is_laporan_harian = ($current_page == 'admin_laporan_harian.php');
+$is_laporan_bulanan = ($current_page == 'admin_laporan_bulanan.php');
+$is_inspeksi_pengujian = ($current_page == 'admin_inspeksi_pengujian.php');
+$is_kelola_lokasi = ($current_page == 'kelola_lokasi.php');
+$is_kelola_peralatan = ($current_page == 'kelola_jenis_peralatan.php');
+$is_kelola_user = ($current_page == 'admin_personnel.php');
 ?>
 <style>
 /* Pre-render styles based on localStorage state */
@@ -219,29 +228,31 @@ html.sidebar-open body {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 12px;
+    padding: 14px 16px;
     background: rgba(255, 255, 255, 0.1);
     border-radius: 12px;
 }
 
 .admin-avatar {
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     background: rgba(8, 127, 138, 0.5);
-    border-radius: 10px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
     color: #fff;
     font-weight: 700;
-    font-size: 14px;
+    font-size: 15px;
+    flex-shrink: 0;
 }
 
 .admin-info h4 {
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     color: #fff;
-    margin-bottom: 2px;
+    margin: 0 0 4px 0;
+    line-height: 1.2;
 }
 
 .admin-info span {
@@ -328,7 +339,7 @@ html.sidebar-open body {
             <div class="nav-section-title">Menu Utama</div>
             
             <div class="nav-item">
-                <a href="admin_dashboard.php" class="nav-link active">
+                <a href="admin_dashboard.php" class="nav-link <?= $is_dashboard ? 'active' : '' ?>">
                     <i class="fas fa-th-large"></i>
                     Dashboard
                 </a>
@@ -338,17 +349,17 @@ html.sidebar-open body {
         <div class="nav-section">
             <div class="nav-section-title">Manajemen Data</div>
             
-            <div class="nav-item has-submenu">
+            <div class="nav-item has-submenu <?= ($is_kelola_lokasi || $is_kelola_peralatan) ? 'open' : '' ?>">
                 <a href="#" class="nav-link" onclick="toggleSubmenu(this); return false;">
                     <i class="fas fa-database"></i>
                     Kelola Master
                 </a>
-                <div class="nav-submenu">
-                    <a href="kelola_lokasi.php" class="nav-link">
+                <div class="nav-submenu" <?= ($is_kelola_lokasi || $is_kelola_peralatan) ? 'style="display: block;"' : '' ?>>
+                    <a href="kelola_lokasi.php" class="nav-link <?= $is_kelola_lokasi ? 'active' : '' ?>">
                         <i class="fas fa-circle"></i>
                         Kelola Lokasi
                     </a>
-                    <a href="kelola_jenis_peralatan.php" class="nav-link">
+                    <a href="kelola_jenis_peralatan.php" class="nav-link <?= $is_kelola_peralatan ? 'active' : '' ?>">
                         <i class="fas fa-circle"></i>
                         Kelola Peralatan
                     </a>
@@ -356,7 +367,7 @@ html.sidebar-open body {
             </div>
 
             <div class="nav-item">
-                <a href="admin_personnel.php" class="nav-link">
+                <a href="admin_personnel.php" class="nav-link <?= $is_kelola_user ? 'active' : '' ?>">
                     <i class="fas fa-users"></i>
                     Kelola User
                 </a>
@@ -366,19 +377,27 @@ html.sidebar-open body {
         <div class="nav-section">
             <div class="nav-section-title">Pelaporan</div>
             
-            <div class="nav-item has-submenu">
+            <div class="nav-item has-submenu <?= ($is_laporan_pengukuran || $is_laporan_harian || $is_laporan_bulanan || $is_inspeksi_pengujian) ? 'open' : '' ?>">
                 <a href="#" class="nav-link" onclick="toggleSubmenu(this); return false;">
                     <i class="fas fa-file-alt"></i>
                     Laporan
                 </a>
-                <div class="nav-submenu">
-                    <a href="admin_laporan_harian.php" class="nav-link">
+                <div class="nav-submenu" <?= ($is_laporan_pengukuran || $is_laporan_harian || $is_laporan_bulanan || $is_inspeksi_pengujian) ? 'style="display: block;"' : '' ?>>
+                    <a href="admin_laporan_harian.php" class="nav-link <?= $is_laporan_harian ? 'active' : '' ?>">
                         <i class="fas fa-circle"></i>
                         Laporan Harian
                     </a>
-                    <a href="admin_laporan_bulanan.php" class="nav-link">
+                    <a href="admin_laporan_bulanan.php" class="nav-link <?= $is_laporan_bulanan ? 'active' : '' ?>">
                         <i class="fas fa-circle"></i>
                         Laporan Bulanan
+                    </a>
+                    <a href="admin_laporan_pengukuran.php" class="nav-link <?= $is_laporan_pengukuran ? 'active' : '' ?>">
+                        <i class="fas fa-circle"></i>
+                        Laporan Pengukuran
+                    </a>
+                    <a href="admin_inspeksi_pengujian.php" class="nav-link <?= $is_inspeksi_pengujian ? 'active' : '' ?>">
+                        <i class="fas fa-circle"></i>
+                        Inspeksi dan Pengujian
                     </a>
                 </div>
             </div>
@@ -396,7 +415,7 @@ html.sidebar-open body {
         </div>
         <a href="logout.php" class="logout-btn-sidebar">
             <i class="fas fa-sign-out-alt"></i>
-            <span>Logout</span>
+            <span>Keluar</span>
         </a>
     </div>
 </aside>
@@ -447,28 +466,27 @@ document.addEventListener('DOMContentLoaded', function() {
         sidebarTrigger.classList.add('hidden');
     }
 
-    // Set active link based on current page
-    const currentPage = window.location.pathname.split('/').pop();
-    const navLinks = document.querySelectorAll('.nav-link');
+    // JS Active Link Logic Disabled - Relying on PHP
+    // const currentPage = window.location.pathname.split('/').pop();
+    // const navLinks = document.querySelectorAll('.nav-link');
     
-    navLinks.forEach(link => {
-        link.classList.remove('active');
-        const href = link.getAttribute('href');
-        if (href === currentPage) {
-            link.classList.add('active');
-            // Open parent submenu if exists
-            const parentSubmenu = link.closest('.nav-submenu');
-            if (parentSubmenu) {
-                parentSubmenu.parentElement.classList.add('open');
-            }
-        }
-    });
+    // navLinks.forEach(link => {
+    //     // link.classList.remove('active'); // Don't remove PHP active class
+    //     const href = link.getAttribute('href');
+    //     if (href === currentPage) {
+    //        // link.classList.add('active');
+    //         const parentSubmenu = link.closest('.nav-submenu');
+    //         if (parentSubmenu) {
+    //             parentSubmenu.parentElement.classList.add('open');
+    //         }
+    //     }
+    // });
     
     // If no link is active, set dashboard as active
-    const activeLinks = document.querySelectorAll('.nav-link.active');
-    if (activeLinks.length === 0) {
-        const dashboardLink = document.querySelector('a[href="admin_dashboard.php"]');
-        if (dashboardLink) dashboardLink.classList.add('active');
-    }
+    // const activeLinks = document.querySelectorAll('.nav-link.active');
+    // if (activeLinks.length === 0) {
+    //     const dashboardLink = document.querySelector('a[href="admin_dashboard.php"]');
+    //     if (dashboardLink) dashboardLink.classList.add('active');
+    // }
 });
 </script>

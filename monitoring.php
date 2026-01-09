@@ -457,7 +457,7 @@ foreach ($equipments as $eq) {
               <label class="p-select-all-checkbox">
                 <input type="checkbox" onchange="selectGroupNormal(this)">
                 <span class="checkbox-custom"></span>
-                <span class="checkbox-label">Select All</span>
+                <span class="checkbox-label">Pilih Semua</span>
               </label>
             </div>
           </div>
@@ -520,68 +520,66 @@ foreach ($equipments as $eq) {
           style="text-align: center; padding: 60px; background: white; border-radius: 12px; color: #94a3b8; border: 1px dashed #e2e8f0;">
           Peralatan tidak ditemukan.</div>
       <?php } ?>
-
-      <div style="display: flex; gap: 24px; align-items: flex-end;">
-        <div class="p-card" style="flex: 1; margin-bottom: 0;">
-          <div class="p-card-body" style="padding: 24px 0;">
-            <div style="margin-bottom: 24px; padding-left: 20px;">
-              <label
-                style="font-family: var(--font-heading); font-size: 0.85rem; font-weight: 600; color: #64748b; letter-spacing: 0.02em; display: flex; align-items: center; gap: 8px;">
-                Peralatan Dimonitor Oleh (Pilih Personel Bertugas):
+      <!-- Personnel Selection Card -->
+      <div class="p-card" style="margin-bottom: 24px;">
+        <div class="p-card-header" style="cursor: default;">
+          <div style="display:flex; align-items: center; gap: 10px;">
+            <i class="fa-solid fa-users" style="color: var(--brand-teal); font-size: 1rem;"></i>
+            <div style="display:flex; flex-direction:column;">
+              <span class="p-section-title">Personel Bertugas</span>
+              <span class="p-section-subtitle">Pilih yang melakukan monitoring</span>
+            </div>
+          </div>
+        </div>
+        <div class="p-card-body" style="display: block; padding: 24px;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px;" id="personnelList">
+            <?php foreach ($personnel_list as $p) { ?>
+              <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; padding: 12px 16px; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0; transition: all 0.2s;">
+                <input type="checkbox" name="personnel[]" value="<?= htmlspecialchars($p['nama_personnel']) ?>"
+                  style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--brand-teal); border-radius: 4px;">
+                <div style="display: flex; flex-direction: column;">
+                  <strong style="font-family: 'Plus Jakarta Sans'; font-size: 0.9rem; font-weight: 600; color: #334155;"><?= htmlspecialchars($p['nama_personnel']) ?></strong>
+                  <span style="font-family: 'Plus Jakarta Sans'; font-size: 0.7rem; color: #94a3b8; font-weight: 500;"><?= ucwords(strtolower($p['jabatan'])) ?></span>
+                </div>
               </label>
+            <?php } ?>
+          </div>
+          
+          <!-- Add Personnel Row -->
+          <div style="margin-top: 20px; display: flex; gap: 10px; align-items: center; padding-top: 16px; border-top: 1px dashed #e2e8f0;">
+            <div style="flex: 1; max-width: 240px;">
+              <input type="text" id="newPersonnelName" placeholder="Nama..."
+                style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 0.85rem; font-family: 'Plus Jakarta Sans'; outline: none; background: white;"
+                onkeypress="if(event.key === 'Enter') { event.preventDefault(); document.getElementById('newPersonnelRole').focus(); }">
             </div>
-            <div style="display: flex; flex-direction: column; gap: 12px; padding-left: 20px;" id="personnelList">
-              <?php foreach ($personnel_list as $p) { ?>
-                <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; padding: 4px 0;">
-                  <input type="checkbox" name="personnel[]" value="<?= htmlspecialchars($p['nama_personnel']) ?>"
-                    style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--brand-teal); border-radius: 4px; border: 2px solid #cbd5e1;">
-                  <div style="display: flex; flex-direction: column;">
-                    <strong
-                      style="font-family: 'Plus Jakarta Sans'; font-size: 0.9rem; font-weight: 600; color: #334155;"><?= htmlspecialchars($p['nama_personnel']) ?></strong>
-                    <span
-                      style="font-family: 'Plus Jakarta Sans'; font-size: 0.7rem; color: #94a3b8; font-weight: 500; letter-spacing: 0.02em;"><?= ucwords(strtolower($p['jabatan'])) ?></span>
-                  </div>
-                </label>
-              <?php } ?>
+            <div style="flex: 1; max-width: 180px;">
+              <input type="text" id="newPersonnelRole" placeholder="Sebagai..."
+                style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 0.85rem; font-family: 'Plus Jakarta Sans'; outline: none; background: white;"
+                onkeypress="if(event.key === 'Enter') { event.preventDefault(); addPersonnel(); }">
             </div>
-            <div
-              style="margin-top: 24px; display: flex; gap: 8px; align-items: center; padding-left: 20px; padding-right: 20px;">
-              <div style="position: relative; flex: 2; max-width: 250px;">
-                <input type="text" id="newPersonnelName" placeholder="Nama..."
-                  style="width: 100%; padding: 10px 16px; border-radius: 10px; border: 1px solid #cbd5e1; font-size: 0.85rem; font-family: 'Plus Jakarta Sans'; outline: none; transition: all 0.2s;"
-                  onkeypress="if(event.key === 'Enter') { event.preventDefault(); document.getElementById('newPersonnelRole').focus(); }">
-              </div>
-              <div style="position: relative; flex: 1.5; max-width: 200px;">
-                <input type="text" id="newPersonnelRole" placeholder="Sebagai..."
-                  style="width: 100%; padding: 10px 16px; border-radius: 10px; border: 1px solid #cbd5e1; font-size: 0.85rem; font-family: 'Plus Jakarta Sans'; outline: none; transition: all 0.2s;"
-                  onkeypress="if(event.key === 'Enter') { event.preventDefault(); addPersonnel(); }">
-              </div>
-              <button type="button" onclick="addPersonnel()"
-                style="background: #f1f5f9; border: 1px solid #cbd5e1; color: #475569; width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;"
-                onmouseover="this.style.background='#e2e8f0'; this.style.borderColor='#94a3b8'"
-                onmouseout="this.style.background='#f1f5f9'; this.style.borderColor='#cbd5e1'">
-                <i class="fa-solid fa-plus" style="font-size: 0.9rem;"></i>
-              </button>
-            </div>
+            <button type="button" onclick="addPersonnel()"
+              style="background: var(--brand-teal); border: none; color: white; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;"
+              onmouseover="this.style.background='#065C63';"
+              onmouseout="this.style.background='var(--brand-teal)';">
+              <i class="fa-solid fa-plus" style="font-size: 0.9rem;"></i>
+            </button>
           </div>
         </div>
-
-        </div>
-        
-        <?php if(!$is_submitted): ?>
-        <div class="p-footer"
-          style="margin-top: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 12px; padding-bottom: 24px;">
-          <button type="button" onclick="showConfirmModal()" class="p-btn-submit">SIMPAN DATA</button>
-          <div id="personnelError"
-            style="display: none; color: #ef4444; font-size: 0.85rem; font-weight: 600; margin-top: 4px; animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;">
-            <i class="fa-solid fa-circle-exclamation" style="margin-right: 6px;"></i> Harap pilih minimal satu personel
-            bertugas!
-          </div>
-        </div>
-        <?php endif; ?>
       </div>
-  </div>
-  </form>
+
+      <!-- Submit Button Section -->
+      <?php if(!$is_submitted): ?>
+      <div style="display: flex; justify-content: flex-end; align-items: center; gap: 16px; margin-bottom: 40px;">
+        <div id="personnelError"
+          style="display: none; color: #ef4444; font-size: 0.85rem; font-weight: 600; animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;">
+          <i class="fa-solid fa-circle-exclamation" style="margin-right: 6px;"></i> Harap pilih minimal satu personel bertugas!
+        </div>
+        <button type="button" onclick="showConfirmModal()" class="p-btn-submit" style="padding: 14px 32px; font-size: 0.9rem;">
+          <i class="fa-solid fa-floppy-disk" style="margin-right: 8px;"></i>SIMPAN DATA
+        </button>
+      </div>
+      <?php endif; ?>
+    </form>
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
@@ -820,8 +818,19 @@ foreach ($equipments as $eq) {
       if (checkbox.checked) {
         // Select all items to Normal
         selectAllNormal(card);
+      } else {
+        // Uncheck all - clear all radio selections in this section
+        card.querySelectorAll('input[type="radio"]:checked').forEach(r => {
+          r.checked = false;
+        });
+        // Also remove any row styling
+        card.querySelectorAll('.p-row').forEach(row => {
+          row.classList.remove('p-row-normal', 'p-row-findings');
+          // Remove detail buttons if any
+          const detailCol = row.querySelector('.p-detail-col');
+          if (detailCol) detailCol.remove();
+        });
       }
-      // If unchecked, do nothing (user can manually change individual items)
     }
 
     function addPersonnel() {

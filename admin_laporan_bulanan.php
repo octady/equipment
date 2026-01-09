@@ -472,10 +472,10 @@ $sections = $conn->query("SELECT * FROM sections ORDER BY urutan ASC")->fetch_al
         </div>
 
         <div class="legend-bar">
-            <div class="legend-item"><div class="dot bg-O"></div> <span>Operasi Normal (O)</span></div>
-            <div class="legend-item"><div class="dot bg-minus"></div> <span>Operasi Menurun (-)</span></div>
-            <div class="legend-item"><div class="dot bg-V"></div> <span>Standby / Tergesa (V)</span></div>
-            <div class="legend-item"><div class="dot bg-X"></div> <span>Rusak (X)</span></div>
+            <div class="legend-item"><div class="dot bg-O"></div> <span>Normal (O)</span></div>
+            <div class="legend-item"><div class="dot bg-minus"></div> <span>Menurun (-)</span></div>
+            <div class="legend-item"><div class="dot bg-X"></div> <span>Terputus (X)</span></div>
+            <div class="legend-item"><div class="dot bg-V"></div> <span>Gangguan (V)</span></div>
             <div class="legend-item"><div class="dot bg-blank" style="border:1px solid #ccc"></div> <span>Belum Dicek (Kosong)</span></div>
         </div>
 

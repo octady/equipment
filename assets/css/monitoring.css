@@ -1592,7 +1592,7 @@ table tbody tr:last-child td {
   transform: scale(1.1);
 }
 
-/* Status X - Menurun (Yellow) */
+/* Status X - Terputus (Yellow) */
 .status-radio-X:checked+span {
   background: #F59E0B;
   color: white;
@@ -1600,7 +1600,7 @@ table tbody tr:last-child td {
   transform: scale(1.1);
 }
 
-/* Status V - Tergesa (Red) */
+/* Status V - Gangguan (Red) */
 .status-radio-V:checked+span {
   background: #EF4444;
   color: white;
