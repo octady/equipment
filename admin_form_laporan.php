@@ -2,9 +2,14 @@
 session_start();
 include "config/database.php";
 
-// Check login
+// Check login and admin role
 if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
     header("Location: login.php");
+    exit;
+}
+
+if ($_SESSION['role'] != 'admin') {
+    header("Location: form_laporan.php");
     exit;
 }
 
@@ -14,7 +19,7 @@ if (isset($_POST['delete_report'])) {
     $stmt = $conn->prepare("DELETE FROM laporan_pengukuran WHERE id = ?");
     $stmt->bind_param("i", $delete_id);
     $stmt->execute();
-    header("Location: form_laporan.php?deleted=1");
+    header("Location: admin_laporan_pengukuran.php?deleted=1");
     exit;
 }
 
@@ -41,7 +46,7 @@ if (isset($_POST['save_report'])) {
     
     if ($stmt->execute()) {
         $saved_id = $edit_id ? $edit_id : $conn->insert_id;
-        header("Location: form_laporan.php?saved=1&id=" . $saved_id);
+        header("Location: admin_form_laporan.php?saved=1&id=" . $saved_id);
         exit;
     }
 }
@@ -95,10 +100,15 @@ $indo_months = [
 
 <!DOCTYPE html>
 <html lang="id">
+<script>
+if (localStorage.getItem('sidebarOpen') === 'true') {
+    document.documentElement.classList.add('sidebar-open');
+}
+</script>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Form Laporan Pengukuran - Equipment Monitoring</title>
+    <title>Detail Laporan - Admin</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="assets/css/monitoring.css">
@@ -110,6 +120,33 @@ $indo_months = [
             --brand-teal-dark: #065C63;
             --brand-emerald: #10b981;
         }
+
+        /* Override global padding for admin view */
+        body {
+            padding-top: 0 !important;
+        }
+
+        /* Admin layout adjustments */
+        .admin-main .view-mode-banner {
+            margin-bottom: 20px;
+        }
+        
+        .admin-main .form-container {
+            padding: 24px;
+            background: #fff;
+            border-radius: 16px;
+        }
+        
+        .admin-main .form-header {
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        
+        .admin-main .form-header h1 {
+            font-size: 1.4rem;
+        }
+        
+
 
         .form-container {
             max-width: 1400px;
@@ -615,28 +652,38 @@ $indo_months = [
 </head>
 
 <body class="<?= $view_mode ? 'view-mode' : '' ?>">
-    <?php include 'includes/navbar.php'; ?>
+    <?php include 'includes/admin_sidebar.php'; ?>
+    <main class="admin-main">
 
-    <div class="p-container">
+    <div class="admin-content" style="padding: 0 24px 24px 24px; max-width: 1400px; margin: 0 auto;">
         <?php if ($view_mode && $saved_report): ?>
+        
+        <div style="padding: 20px 0 10px 0;">
+            <a href="admin_laporan_pengukuran.php" style="display: inline-flex; align-items: center; gap: 8px; color: #64748b; text-decoration: none; font-weight: 600; font-size: 0.9rem; transition: color 0.2s;">
+                <i class="fas fa-arrow-left"></i> Kembali ke Laporan Pengukuran
+            </a>
+        </div>
+
         <!-- View Mode Banner -->
-        <div class="view-mode-banner">
+        <div class="view-mode-banner" style="margin-bottom: 16px; margin-top: 10px;">
             <i class="fas fa-check-circle"></i>
             <div class="banner-text">
                 <h3>Laporan Tersimpan</h3>
-                <p>Laporan ini sudah disimpan. Klik "Edit Laporan" untuk mengubah data.</p>
+                <p>Tanggal: <?= date('d', strtotime($saved_report['tanggal'])) ?> <?= $indo_months[intval(date('m', strtotime($saved_report['tanggal'])))] ?> <?= date('Y', strtotime($saved_report['tanggal'])) ?> | Oleh: <?= htmlspecialchars($saved_report['dibuat_oleh']) ?></p>
             </div>
-            <a href="form_laporan.php" style="background: white; color: #059669; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.85rem;">
-                <i class="fas fa-plus"></i> Buat Baru
-            </a>
         </div>
         <?php endif; ?>
         
-        <div class="form-container">
+        <div class="form-container" style="padding: 0;">
             <!-- Header -->
             <div class="form-header">
+                <?php if ($view_mode && $saved_report): ?>
+                <h1><i class="fas fa-file-alt" style="margin-right: 10px;"></i>Detail Laporan Pengukuran</h1>
+                <p>Menampilkan data laporan pengukuran yang tersimpan</p>
+                <?php else: ?>
                 <h1><i class="fas fa-file-excel" style="margin-right: 10px;"></i>Form Laporan Pengukuran</h1>
                 <p>Isi data pengukuran untuk generate laporan Excel dengan 3 sheet</p>
+                <?php endif; ?>
                 
                 <div class="header-meta">
                     <div class="meta-item">

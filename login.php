@@ -73,14 +73,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 body {
     font-family: 'Plus Jakarta Sans', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 50%, #80deea 100%);
-    min-height: 100vh;
+    height: 100vh;
+    overflow: hidden;
 }
 
 /* CONTAINER */
 .login-container {
     display: flex;
-    min-height: 100vh;
+    height: 100vh;
     position: relative;
+    overflow: hidden;
 }
 
 .login-container::after {

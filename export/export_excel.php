@@ -51,7 +51,8 @@ echo "\xEF\xBB\xBF";
     td {
       border: 1px solid #000;
       padding: 5px;
-      font-size: 11px;
+      font-size: 11pt;
+      mso-number-format: "\@";
       text-align: center;
       vertical-align: middle;
     }
@@ -469,19 +470,19 @@ echo "\xEF\xBB\xBF";
     </tr>
     <tr>
       <td style="width: 30px; background-color: #00FF00;">O</td>
-      <td class="text-left">Operasi Normal</td>
+      <td class="text-left">Normal</td>
     </tr>
     <tr>
-      <td style="background-color: #FFFF00;">X</td>
-      <td class="text-left">Operasi Menurun</td>
+      <td style="background-color: #FFFF00;">-</td>
+      <td class="text-left">Menurun</td>
     </tr>
     <tr>
-      <td style="background-color: #FF0000; color: white;">V</td>
-      <td class="text-left">Operasi Tergesa</td>
+      <td style="background-color: #FF0000; color: white;">X</td>
+      <td class="text-left">Terputus</td>
     </tr>
     <tr>
-      <td style="background-color: #0000FF; color: white;">-</td>
-      <td class="text-left">Gangguan pada peralatan</td>
+      <td style="background-color: #0000FF; color: white;">V</td>
+      <td class="text-left">Gangguan</td>
     </tr>
   </table>
 
