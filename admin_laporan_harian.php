@@ -497,7 +497,7 @@ while ($row = $result->fetch_assoc()) {
         <!-- Headers -->
         <div class="page-header">
             <div class="date-display">
-                <h1>LAPORAN HARIAN (ADMIN)</h1>
+                <h1>LAPORAN HARIAN</h1>
             </div>
         </div>
 

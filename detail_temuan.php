@@ -479,6 +479,7 @@ if ($inspection) {
             align-items: center;
             justify-content: center;
             gap: 8px;
+            text-decoration: none;
         }
 
         .p-btn-secondary {
