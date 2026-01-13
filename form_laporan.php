@@ -670,9 +670,9 @@ $indo_months = [
                     <div class="kriteria-box">
                         <h4><i class="fas fa-info-circle"></i> Kriteria</h4>
                         <ul class="kriteria-list">
-                            <li>Panjang kabel &lt; 3.000 meter → <strong>Megaohm</strong></li>
-                            <li>Panjang kabel 3.000 - 6.000 meter → <strong>Megaohm</strong></li>
-                            <li>Panjang kabel &gt;6.000 meter → <strong>Megaohm</strong></li>
+                            <li>Panjang kabel &lt; 3.000 meter </li>
+                            <li>Panjang kabel 3.000 - 6.000 meter </li>
+                            <li>Panjang kabel &gt;6.000 meter </li>
                         </ul>
                     </div>
 

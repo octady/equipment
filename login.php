@@ -105,7 +105,7 @@ body {
     align-items: center;
     padding: 40px 30px 40px 80px;
     position: relative;
-    z-index: 2;
+    z-index: 3;
 }
 
 .logo-container {
@@ -213,7 +213,7 @@ body {
     justify-content: center;
     padding: 30px 50px;
     position: relative;
-    z-index: 2;
+    z-index: 3;
 }
 
 /* LOGIN BOX */
@@ -601,6 +601,152 @@ input[type="password"]::-webkit-clear-button {
     opacity: 1;
     pointer-events: none;
 }
+/* Element.png decorations - scattered */
+.element-decoration {
+    position: absolute;
+    z-index: 2;
+    opacity: 0.3;
+    pointer-events: none;
+}
+
+.element-1 {
+    top: 3%;
+    right: 8%;
+    width: 100px;
+}
+
+.element-2 {
+    top: 15%;
+    right: 30%;
+    width: 70px;
+}
+
+.element-3 {
+    bottom: 40%;
+    right: 20%;
+    width: 60px;
+}
+
+.element-4 {
+    bottom: 20%;
+    right: 40%;
+    width: 80px;
+}
+
+.element-5 {
+    top: 35%;
+    right: 5%;
+    width: 55px;
+}
+
+.element-6 {
+    top: 5%;
+    left: 10%;
+    width: 80px;
+}
+
+.element-7 {
+    top: 8%;
+    right: 35%;
+    width: 60px;
+}
+
+.element-8 {
+    bottom: 35%;
+    left: 38%;
+    width: 70px;
+}
+
+.element-9 {
+    bottom: 15%;
+    right: 30%;
+    width: 55px;
+}
+
+.element-10 {
+    top: 40%;
+    left: 45%;
+    width: 50px;
+}
+
+.element-11 {
+    top: 20%;
+    left: 55%;
+    width: 65px;
+}
+
+.element-12 {
+    bottom: 25%;
+    right: 45%;
+    width: 45px;
+}
+@keyframes floatElement {
+    0%, 100% {
+        transform: translateY(0px) rotate(0deg);
+    }
+    25% {
+        transform: translateY(-15px) rotate(5deg);
+    }
+    50% {
+        transform: translateY(-25px) rotate(-5deg);
+    }
+    75% {
+        transform: translateY(-10px) rotate(3deg);
+    }
+}
+
+/* Responsive untuk element decorations */
+@media (max-width: 968px) {
+    .element-decoration {
+        opacity: 0.35;
+    }
+    
+    /* Sembunyikan beberapa elemen di tablet */
+    .element-3, .element-5, .element-7, .element-9, .element-11 {
+        display: none;
+    }
+    
+    /* Perkecil ukuran */
+    .element-1, .element-2, .element-4, .element-6, .element-8, .element-10, .element-12 {
+        width: 35px !important;
+    }
+}
+
+@media (max-width: 640px) {
+    /* Sembunyikan sebagian besar elemen di mobile */
+    .element-decoration {
+        display: none;
+    }
+    
+    /* Tampilkan beberapa elemen dengan posisi aman */
+    .element-1, .element-4, .element-10 {
+        display: block !important;
+        opacity: 0.25;
+        width: 30px !important;
+    }
+    
+    /* Posisi khusus untuk mobile - di samping kiri dan kanan */
+    .element-1 {
+        top: auto !important;
+        bottom: 48% !important;
+        left: 3% !important;
+        right: auto !important;
+    }
+    
+    .element-4 {
+        top: auto !important;
+        bottom: 48% !important;
+        left: auto !important;
+        right: 3% !important;
+    }
+    
+    .element-10 {
+        top: auto !important;
+        bottom: 3% !important;
+        left: auto !important;
+        right: 5% !important;
+    }
+}
 </style>
 </head>
 <body>
@@ -636,6 +782,19 @@ input[type="password"]::-webkit-clear-button {
             </div>
         </div>
     </div>
+  <!-- Element.png Decorations -->
+    <img src="assets/img/element.png?v=<?php echo time(); ?>" alt="Element" class="element-decoration element-1">
+    <img src="assets/img/element.png?v=<?php echo time(); ?>" alt="Element" class="element-decoration element-2">
+    <img src="assets/img/element.png?v=<?php echo time(); ?>" alt="Element" class="element-decoration element-3">
+    <img src="assets/img/element.png?v=<?php echo time(); ?>" alt="Element" class="element-decoration element-4">
+    <img src="assets/img/element.png?v=<?php echo time(); ?>" alt="Element" class="element-decoration element-5">
+    <img src="assets/img/element.png?v=<?php echo time(); ?>" alt="Element" class="element-decoration element-6">
+    <img src="assets/img/element.png?v=<?php echo time(); ?>" alt="Element" class="element-decoration element-7">
+    <img src="assets/img/element.png?v=<?php echo time(); ?>" alt="Element" class="element-decoration element-8">
+    <img src="assets/img/element.png?v=<?php echo time(); ?>" alt="Element" class="element-decoration element-9">
+    <img src="assets/img/element.png?v=<?php echo time(); ?>" alt="Element" class="element-decoration element-10">
+    <img src="assets/img/element.png?v=<?php echo time(); ?>" alt="Element" class="element-decoration element-11">
+    <img src="assets/img/element.png?v=<?php echo time(); ?>" alt="Element" class="element-decoration element-12">
 
     <!-- RIGHT SECTION -->
     <div class="right-section">
