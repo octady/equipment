@@ -31,7 +31,7 @@ if (!$equipment) {
 }
 
 // Fetch existing inspection
-$stmt = $conn->prepare("SELECT * FROM inspections_daily WHERE equipment_id = ? AND tanggal = ?");
+$stmt = $conn->prepare("SELECT * FROM monitoring WHERE equipment_id = ? AND tanggal = ?");
 $stmt->bind_param("is", $eq_id, $today);
 $stmt->execute();
 $inspection = $stmt->get_result()->fetch_assoc();
@@ -86,13 +86,13 @@ if (isset($_POST['save_detail'])) {
     // For simplicity, we'll keep the original checker if it exists, or add Admin if new.
     
     if ($inspection) {
-        $stmt = $conn->prepare("UPDATE inspections_daily SET status = ?, keterangan = ? WHERE id = ?");
+        $stmt = $conn->prepare("UPDATE monitoring SET status = ?, keterangan = ? WHERE id = ?");
         $stmt->bind_param("ssi", $status, $ket, $inspection['id']);
         $stmt->execute();
         $inspection_id = $inspection['id'];
     } else {
         // Create new inspection
-        $stmt = $conn->prepare("INSERT INTO inspections_daily (equipment_id, tanggal, status, keterangan, checked_by) VALUES (?, ?, ?, ?, ?)");
+        $stmt = $conn->prepare("INSERT INTO monitoring (equipment_id, tanggal, status, keterangan, checked_by) VALUES (?, ?, ?, ?, ?)");
         $user_name = $_SESSION['nama_lengkap'] ?? 'Admin'; 
         $stmt->bind_param("issss", $eq_id, $today, $status, $ket, $user_name);
         $stmt->execute();
@@ -110,7 +110,7 @@ if (isset($_POST['save_detail'])) {
                 $filename = "insp_" . $eq_id . "_" . time() . "_" . $key . "." . $ext;
                 if (move_uploaded_file($_FILES['fotos']['tmp_name'][$key], $upload_dir . $filename)) {
                     $foto_path = "assets/uploads/inspections/" . $filename;
-                    $stmt_photo = $conn->prepare("INSERT INTO inspection_photos (inspection_id, foto_path) VALUES (?, ?)");
+                    $stmt_photo = $conn->prepare("INSERT INTO dokumentasi_masalah (inspection_id, foto_path) VALUES (?, ?)");
                     $stmt_photo->bind_param("is", $inspection_id, $foto_path);
                     $stmt_photo->execute();
                 }
@@ -127,7 +127,7 @@ if (isset($_POST['delete_photo_id'])) {
     $del_id = intval($_POST['delete_photo_id']);
     // Check ownership/validity
     // Admin can delete any photo for this inspection
-    $stmt_check = $conn->prepare("SELECT foto_path FROM inspection_photos WHERE id = ? AND inspection_id = ?");
+    $stmt_check = $conn->prepare("SELECT foto_path FROM dokumentasi_masalah WHERE id = ? AND inspection_id = ?");
     $stmt_check->bind_param("ii", $del_id, $inspection['id']);
     $stmt_check->execute();
     $res_check = $stmt_check->get_result();
@@ -138,7 +138,7 @@ if (isset($_POST['delete_photo_id'])) {
             unlink($row['foto_path']);
         }
         // Delete DB record
-        $stmt_del = $conn->prepare("DELETE FROM inspection_photos WHERE id = ?");
+        $stmt_del = $conn->prepare("DELETE FROM dokumentasi_masalah WHERE id = ?");
         $stmt_del->bind_param("i", $del_id);
         $stmt_del->execute();
     }
@@ -150,7 +150,7 @@ if (isset($_POST['delete_photo_id'])) {
 // Fetch photos
 $photos = [];
 if ($inspection) {
-    $res_photos = $conn->query("SELECT * FROM inspection_photos WHERE inspection_id = " . $inspection['id'] . " ORDER BY id DESC");
+    $res_photos = $conn->query("SELECT * FROM dokumentasi_masalah WHERE inspection_id = " . $inspection['id'] . " ORDER BY id DESC");
     if ($res_photos) {
         while ($p = $res_photos->fetch_assoc()) $photos[] = $p;
     }

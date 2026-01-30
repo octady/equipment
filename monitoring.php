@@ -3,22 +3,22 @@ include "config/database.php";
 include "config/auth.php";
 
 // --- AUTO-SETUP & MIGRATION ---
-$conn->query("CREATE TABLE IF NOT EXISTS inspection_photos (
+$conn->query("CREATE TABLE IF NOT EXISTS dokumentasi_masalah (
     id INT AUTO_INCREMENT PRIMARY KEY,
     inspection_id INT NOT NULL,
     foto_path VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (inspection_id) REFERENCES inspections_daily(id) ON DELETE CASCADE
+    FOREIGN KEY (inspection_id) REFERENCES monitoring(id) ON DELETE CASCADE
 )");
 
 // Migrate existing single photos to new table if they haven't been migrated
-$res_mig = $conn->query("SELECT id, foto FROM inspections_daily WHERE foto IS NOT NULL AND foto != ''");
+$res_mig = $conn->query("SELECT id, foto FROM monitoring WHERE foto IS NOT NULL AND foto != ''");
 while ($row_mig = $res_mig->fetch_assoc()) {
-  $check = $conn->prepare("SELECT id FROM inspection_photos WHERE inspection_id = ? AND foto_path = ?");
+  $check = $conn->prepare("SELECT id FROM dokumentasi_masalah WHERE inspection_id = ? AND foto_path = ?");
   $check->bind_param("is", $row_mig['id'], $row_mig['foto']);
   $check->execute();
   if ($check->get_result()->num_rows == 0) {
-    $ins = $conn->prepare("INSERT INTO inspection_photos (inspection_id, foto_path) VALUES (?, ?)");
+    $ins = $conn->prepare("INSERT INTO dokumentasi_masalah (inspection_id, foto_path) VALUES (?, ?)");
     $ins->bind_param("is", $row_mig['id'], $row_mig['foto']);
     $ins->execute();
   }
@@ -26,7 +26,7 @@ while ($row_mig = $res_mig->fetch_assoc()) {
 // ------------------------------
 
 $today = date('Y-m-d');
-$check_submitted = $conn->query("SELECT id FROM inspections_daily WHERE tanggal = '$today' LIMIT 1");
+$check_submitted = $conn->query("SELECT id FROM monitoring WHERE tanggal = '$today' LIMIT 1");
 $is_submitted = ($check_submitted && $check_submitted->num_rows > 0);
 $success = isset($_GET['success']);
 
@@ -97,17 +97,17 @@ if (isset($_POST['save'])) {
       $processed_ids[] = $eq_id;
 
       // DB Logic (Insert/Update)
-      $stmt_exists = $conn->prepare("SELECT id, foto, keterangan FROM inspections_daily WHERE equipment_id = ? AND tanggal = ?");
+      $stmt_exists = $conn->prepare("SELECT id, foto, keterangan FROM monitoring WHERE equipment_id = ? AND tanggal = ?");
       $stmt_exists->bind_param("is", $eq_id, $today);
       $stmt_exists->execute();
       $exists = $stmt_exists->get_result()->fetch_assoc();
 
       if ($exists) {
         $inspection_id = $exists['id'];
-        $stmt = $conn->prepare("UPDATE inspections_daily SET status = ?, keterangan = ?, checked_by = ? WHERE id = ?");
+        $stmt = $conn->prepare("UPDATE monitoring SET status = ?, keterangan = ?, checked_by = ? WHERE id = ?");
         $stmt->bind_param("sssi", $status, $ket, $final_checked_by, $inspection_id);
       } else {
-        $stmt = $conn->prepare("INSERT INTO inspections_daily (equipment_id, tanggal, status, keterangan, checked_by) VALUES (?, ?, ?, ?, ?)");
+        $stmt = $conn->prepare("INSERT INTO monitoring (equipment_id, tanggal, status, keterangan, checked_by) VALUES (?, ?, ?, ?, ?)");
         $stmt->bind_param("issss", $eq_id, $today, $status, $ket, $final_checked_by);
       }
       $stmt->execute();
@@ -118,7 +118,7 @@ if (isset($_POST['save'])) {
       if (isset($data['photos']) && is_array($data['photos'])) {
         foreach ($data['photos'] as $path) {
           // Path is already relative (assets/uploads/...)
-          $stmt_ph = $conn->prepare("INSERT INTO inspection_photos (inspection_id, foto_path) VALUES (?, ?)");
+          $stmt_ph = $conn->prepare("INSERT INTO dokumentasi_masalah (inspection_id, foto_path) VALUES (?, ?)");
           $stmt_ph->bind_param("is", $inspection_id, $path);
           $stmt_ph->execute();
         }
@@ -134,7 +134,7 @@ if (isset($_POST['save'])) {
 
       $ket = $_POST['keterangan'][$eq_id] ?? '';
 
-      $stmt_exists = $conn->prepare("SELECT id, foto, keterangan FROM inspections_daily WHERE equipment_id = ? AND tanggal = ?");
+      $stmt_exists = $conn->prepare("SELECT id, foto, keterangan FROM monitoring WHERE equipment_id = ? AND tanggal = ?");
       $stmt_exists->bind_param("is", $eq_id, $today);
       $stmt_exists->execute();
       $exists = $stmt_exists->get_result()->fetch_assoc();
@@ -142,10 +142,10 @@ if (isset($_POST['save'])) {
       if ($exists) {
         $inspection_id = $exists['id'];
         $final_ket = (!empty($ket)) ? $ket : $exists['keterangan'];
-        $stmt = $conn->prepare("UPDATE inspections_daily SET status = ?, keterangan = ?, checked_by = ? WHERE id = ?");
+        $stmt = $conn->prepare("UPDATE monitoring SET status = ?, keterangan = ?, checked_by = ? WHERE id = ?");
         $stmt->bind_param("sssi", $status, $final_ket, $final_checked_by, $inspection_id);
       } else {
-        $stmt = $conn->prepare("INSERT INTO inspections_daily (equipment_id, tanggal, status, keterangan, checked_by) VALUES (?, ?, ?, ?, ?)");
+        $stmt = $conn->prepare("INSERT INTO monitoring (equipment_id, tanggal, status, keterangan, checked_by) VALUES (?, ?, ?, ?, ?)");
         $stmt->bind_param("issss", $eq_id, $today, $status, $ket, $final_checked_by);
       }
       if (!$stmt->execute()) {
@@ -160,7 +160,7 @@ if (isset($_POST['save'])) {
         $filename = "insp_inline_" . $eq_id . "_" . time() . "." . $ext;
         if (move_uploaded_file($_FILES['foto']['tmp_name'][$eq_id], $upload_dir . $filename)) {
           $new_foto_path = "assets/uploads/inspections/" . $filename;
-          $stmt_ph = $conn->prepare("INSERT INTO inspection_photos (inspection_id, foto_path) VALUES (?, ?)");
+          $stmt_ph = $conn->prepare("INSERT INTO dokumentasi_masalah (inspection_id, foto_path) VALUES (?, ?)");
           $stmt_ph->bind_param("is", $inspection_id, $new_foto_path);
           $stmt_ph->execute();
         }
@@ -170,7 +170,7 @@ if (isset($_POST['save'])) {
         $s_id = $eq_map[$eq_id];
         if (isset($section_photos[$s_id])) {
           $s_path = $section_photos[$s_id];
-          $stmt_ph = $conn->prepare("INSERT INTO inspection_photos (inspection_id, foto_path) VALUES (?, ?)");
+          $stmt_ph = $conn->prepare("INSERT INTO dokumentasi_masalah (inspection_id, foto_path) VALUES (?, ?)");
           $stmt_ph->bind_param("is", $inspection_id, $s_path);
           $stmt_ph->execute();
         }
@@ -255,11 +255,11 @@ if ($filter_lokasi) {
 
 $query = "SELECT e.*, s.nama_section, s.parent_category, l.nama_lokasi, 
                  i.status as rs, i.keterangan as rk, 
-                 (SELECT COUNT(*) FROM inspection_photos WHERE inspection_id = i.id) as photo_count
+                 (SELECT COUNT(*) FROM dokumentasi_masalah WHERE inspection_id = i.id) as photo_count
           FROM equipments e 
           JOIN sections s ON e.section_id = s.id 
           JOIN lokasi l ON e.lokasi_id = l.id 
-          LEFT JOIN inspections_daily i ON e.id = i.equipment_id AND i.tanggal = '$today'
+          LEFT JOIN monitoring i ON e.id = i.equipment_id AND i.tanggal = '$today'
           WHERE " . implode(' AND ', $where) . " ORDER BY s.urutan, e.nama_peralatan";
 $stmt_eq = $conn->prepare($query);
 if (!$stmt_eq) {

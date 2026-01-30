@@ -356,10 +356,9 @@ $sections = $conn->query("SELECT * FROM sections ORDER BY urutan ASC")->fetch_al
                         foreach ($cat_sections as $section) {
                             // Fetch Equipment for this section
                             $equipments = $conn->query("
-                                SELECT e.*, l.nama_lokasi, f.nama_fasilitas
+                                SELECT e.*, l.nama_lokasi
                                 FROM equipments e
                                 JOIN lokasi l ON e.lokasi_id = l.id
-                                JOIN fasilitas f ON l.fasilitas_id = f.id
                                 WHERE e.section_id = {$section['id']}
                                 ORDER BY e.nama_peralatan
                             ")->fetch_all(MYSQLI_ASSOC);
@@ -389,7 +388,7 @@ $sections = $conn->query("SELECT * FROM sections ORDER BY urutan ASC")->fetch_al
                                 for ($d = 1; $d <= $days_in_month; $d++) {
                                     $date_check = sprintf("%04d-%02d-%02d", $selected_year, $selected_month, $d);
                                     
-                                    $check = $conn->query("SELECT status, jam_operasi FROM inspections_daily WHERE equipment_id = {$eq['id']} AND tanggal = '$date_check'")->fetch_assoc();
+                                    $check = $conn->query("SELECT status, jam_operasi FROM monitoring WHERE equipment_id = {$eq['id']} AND tanggal = '$date_check'")->fetch_assoc();
                                     
                                     $status = $check ? $check['status'] : '';
                                     $cls = 'bg-blank';

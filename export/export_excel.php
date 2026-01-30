@@ -214,7 +214,7 @@ echo "\xEF\xBB\xBF";
 
              for ($d = 1; $d <= $days_in_month; $d++) {
                 $check_date = sprintf("%04d-%02d-%02d", $year, $month_num, $d);
-                $check = $conn->query("SELECT status, jam_operasi FROM inspections_daily WHERE equipment_id = {$eq['id']} AND tanggal = '$check_date'")->fetch_assoc();
+                $check = $conn->query("SELECT status, jam_operasi FROM monitoring WHERE equipment_id = {$eq['id']} AND tanggal = '$check_date'")->fetch_assoc();
                 
                 $status = $check ? $check['status'] : ''; // Empty string if no data
                  
@@ -356,7 +356,6 @@ echo "\xEF\xBB\xBF";
     echo "<tr>";
     echo "<th>No</th>";
     echo "<th>NAMA PERALATAN</th>";
-    echo "<th>FASILITAS/BANGUNAN</th>";
     echo "<th>LOKASI</th>";
     echo "<th>STATUS</th>";
     echo "<th>JAM OPERASI</th>";
@@ -378,16 +377,14 @@ echo "\xEF\xBB\xBF";
       $equipments = $conn->query("
             SELECT 
                 e.*, 
-                l.nama_lokasi, 
-                f.nama_fasilitas,
+                l.nama_lokasi,
                 i.status,
                 i.jam_operasi,
                 i.keterangan,
                 i.checked_by
             FROM equipments e
             JOIN lokasi l ON e.lokasi_id = l.id
-            JOIN fasilitas f ON l.fasilitas_id = f.id
-            LEFT JOIN inspections_daily i ON e.id = i.equipment_id AND i.tanggal = '$date'
+            LEFT JOIN monitoring i ON e.id = i.equipment_id AND i.tanggal = '$date'
             WHERE e.section_id = {$section['id']}
             ORDER BY e.nama_peralatan
         ")->fetch_all(MYSQLI_ASSOC);
@@ -421,7 +418,6 @@ echo "\xEF\xBB\xBF";
         echo "<tr>";
         echo "<td>$no</td>";
         echo "<td class='text-left'>" . htmlspecialchars($eq['nama_peralatan']) . "</td>";
-        echo "<td>" . htmlspecialchars($eq['nama_fasilitas']) . "</td>";
         echo "<td>" . htmlspecialchars($eq['nama_lokasi']) . "</td>";
         echo "<td class='$bg_class'><strong>$status</strong></td>";
         echo "<td>$jam_operasi jam</td>";
@@ -439,7 +435,7 @@ echo "\xEF\xBB\xBF";
         $section_averages[] = $section_avg;
 
         echo "<tr class='rata-rata'>";
-        echo "<td colspan='6' class='text-left'>RATA-RATA</td>";
+        echo "<td colspan='5' class='text-left'>RATA-RATA</td>";
         echo "<td>" . number_format($section_avg, 1) . "%</td>";
         echo "<td colspan='2'>-</td>";
         echo "</tr>";
@@ -451,7 +447,7 @@ echo "\xEF\xBB\xBF";
       $total_avg = array_sum($section_averages) / count($section_averages);
 
       echo "<tr class='rata-rata'>";
-      echo "<td colspan='6' class='text-left'><strong>RATA-RATA TOTAL</strong></td>";
+      echo "<td colspan='5' class='text-left'><strong>RATA-RATA TOTAL</strong></td>";
       echo "<td><strong>" . number_format($total_avg, 1) . "%</strong></td>";
       echo "<td colspan='2'>-</td>";
       echo "</tr>";

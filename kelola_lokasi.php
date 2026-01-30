@@ -10,24 +10,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     if ($action === 'add') {
         $nama = trim($_POST['nama_lokasi'] ?? '');
 
-        // Auto-assign default facility (first available)
-        $fasilitas_id = 0;
-        $check_fac = $conn->query("SELECT id FROM fasilitas ORDER BY id ASC LIMIT 1");
-        if ($check_fac->num_rows > 0) {
-            $fasilitas_id = $check_fac->fetch_assoc()['id'];
-        } else {
-            // Jika tidak ada fasilitas, buat satu default
-            $conn->query("INSERT INTO fasilitas (nama_fasilitas, kode_fasilitas) VALUES ('Default Area', 'DEF')");
-            $fasilitas_id = $conn->insert_id;
-        }
-
         if ($nama === '') {
             echo json_encode(['success' => false, 'message' => 'Nama lokasi wajib diisi']);
             exit;
         }
 
-        $stmt = $conn->prepare("INSERT INTO lokasi (nama_lokasi, fasilitas_id) VALUES (?, ?)");
-        $stmt->bind_param("si", $nama, $fasilitas_id);
+        $stmt = $conn->prepare("INSERT INTO lokasi (nama_lokasi) VALUES (?)");
+        $stmt->bind_param("s", $nama);
         echo json_encode(
             $stmt->execute()
             ? ['success' => true, 'message' => 'Lokasi berhasil ditambahkan']
@@ -76,10 +65,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
 }
 
 /* ================= DATA ================= */
-$q = "SELECT l.id,l.nama_lokasi, l.fasilitas_id, f.nama_fasilitas, COUNT(e.id) equipment_count
+$q = "SELECT l.id, l.nama_lokasi, COUNT(e.id) equipment_count
       FROM lokasi l
       LEFT JOIN equipments e ON l.id=e.lokasi_id
-      LEFT JOIN fasilitas f ON l.fasilitas_id=f.id
       GROUP BY l.id ORDER BY l.nama_lokasi";
 $res = $conn->query($q);
 if (!$res) {
@@ -88,13 +76,6 @@ if (!$res) {
 $data = [];
 while ($r = $res->fetch_assoc())
     $data[] = $r;
-
-// Get Fasilitas List for Dropdown
-$fasilitas = [];
-$res_f = $conn->query("SELECT id, nama_fasilitas FROM fasilitas ORDER BY nama_fasilitas");
-while ($row = $res_f->fetch_assoc()) {
-    $fasilitas[] = $row;
-}
 
 $total_lokasi = count($data);
 $total_equipment = array_sum(array_column($data, 'equipment_count'));
@@ -373,8 +354,7 @@ $total_equipment = array_sum(array_column($data, 'equipment_count'));
                 </thead>
                 <tbody id="tbody">
                     <?php foreach ($data as $i => $l): ?>
-                        <tr data-id="<?= $l['id'] ?>" data-name="<?= htmlspecialchars($l['nama_lokasi']) ?>"
-                            data-fasilitas="<?= $l['fasilitas_id'] ?>">
+                        <tr data-id="<?= $l['id'] ?>" data-name="<?= htmlspecialchars($l['nama_lokasi']) ?>">
                             <td>
                                 <?= $i + 1 ?>
                             </td>

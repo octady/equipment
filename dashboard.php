@@ -27,22 +27,22 @@ $yesterday = date('Y-m-d', strtotime('-1 day'));
 $total_equipment = $conn->query("SELECT COUNT(*) as total FROM equipments")->fetch_assoc()['total'];
 
 // Get today's inspections
-$total_checked = $conn->query("SELECT COUNT(DISTINCT equipment_id) as total FROM inspections_daily WHERE tanggal = '$today'")->fetch_assoc()['total'];
+$total_checked = $conn->query("SELECT COUNT(DISTINCT equipment_id) as total FROM monitoring WHERE tanggal = '$today'")->fetch_assoc()['total'];
 
 // Calculate pending (not yet checked today)
 $pending = $total_equipment - $total_checked;
 
 // Get status breakdown for today
-$status_normal = $conn->query("SELECT COUNT(*) as total FROM inspections_daily WHERE tanggal = '$today' AND status = 'O'")->fetch_assoc()['total'];
-$status_menurun = $conn->query("SELECT COUNT(*) as total FROM inspections_daily WHERE tanggal = '$today' AND status = '-'")->fetch_assoc()['total'];
-$status_rusak = $conn->query("SELECT COUNT(*) as total FROM inspections_daily WHERE tanggal = '$today' AND status = 'X'")->fetch_assoc()['total'];
-$status_perbaikan = $conn->query("SELECT COUNT(*) as total FROM inspections_daily WHERE tanggal = '$today' AND status = 'V'")->fetch_assoc()['total'];
+$status_normal = $conn->query("SELECT COUNT(*) as total FROM monitoring WHERE tanggal = '$today' AND status = 'O'")->fetch_assoc()['total'];
+$status_menurun = $conn->query("SELECT COUNT(*) as total FROM monitoring WHERE tanggal = '$today' AND status = '-'")->fetch_assoc()['total'];
+$status_rusak = $conn->query("SELECT COUNT(*) as total FROM monitoring WHERE tanggal = '$today' AND status = 'X'")->fetch_assoc()['total'];
+$status_perbaikan = $conn->query("SELECT COUNT(*) as total FROM monitoring WHERE tanggal = '$today' AND status = 'V'")->fetch_assoc()['total'];
 
 // Total issues (X + V + -)
 $total_issues = $status_rusak + $status_perbaikan + $status_menurun;
 
 // Get yesterday's data for trend calculation
-$yesterday_issues = $conn->query("SELECT COUNT(*) as total FROM inspections_daily WHERE tanggal = '$yesterday' AND status IN ('X', 'V', '-')")->fetch_assoc()['total'];
+$yesterday_issues = $conn->query("SELECT COUNT(*) as total FROM monitoring WHERE tanggal = '$yesterday' AND status IN ('X', 'V', '-')")->fetch_assoc()['total'];
 
 // Calculate trend percentage (compared to yesterday)
 $trend_percentage = 0;
