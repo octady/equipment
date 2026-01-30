@@ -17,7 +17,7 @@ if ($res_l) {
 }
 
 // Fetch existing data for display (all data)
-$existing_data = $conn->query("SELECT * FROM kegiatan_inspeksi ORDER BY tanggal DESC, id DESC")->fetch_all(MYSQLI_ASSOC);
+$existing_data = $conn->query("SELECT * FROM inspeksi ORDER BY tanggal DESC, id DESC")->fetch_all(MYSQLI_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="id">

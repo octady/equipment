@@ -32,13 +32,13 @@ $total_personnel = $conn->query("SELECT COUNT(*) as total FROM personnel")->fetc
 $total_lokasi = $conn->query("SELECT COUNT(*) as total FROM lokasi")->fetch_assoc()['total'];
 
 // Get today's inspections
-$total_checked = $conn->query("SELECT COUNT(DISTINCT equipment_id) as total FROM inspections_daily WHERE tanggal = '$today'")->fetch_assoc()['total'];
+$total_checked = $conn->query("SELECT COUNT(DISTINCT equipment_id) as total FROM monitoring WHERE tanggal = '$today'")->fetch_assoc()['total'];
 
 // Get status breakdown for today
-$status_normal = $conn->query("SELECT COUNT(*) as total FROM inspections_daily WHERE tanggal = '$today' AND status = 'O'")->fetch_assoc()['total'];
-$status_menurun = $conn->query("SELECT COUNT(*) as total FROM inspections_daily WHERE tanggal = '$today' AND status = '-'")->fetch_assoc()['total'];
-$status_rusak = $conn->query("SELECT COUNT(*) as total FROM inspections_daily WHERE tanggal = '$today' AND status = 'X'")->fetch_assoc()['total'];
-$status_perbaikan = $conn->query("SELECT COUNT(*) as total FROM inspections_daily WHERE tanggal = '$today' AND status = 'V'")->fetch_assoc()['total'];
+$status_normal = $conn->query("SELECT COUNT(*) as total FROM monitoring WHERE tanggal = '$today' AND status = 'O'")->fetch_assoc()['total'];
+$status_menurun = $conn->query("SELECT COUNT(*) as total FROM monitoring WHERE tanggal = '$today' AND status = '-'")->fetch_assoc()['total'];
+$status_rusak = $conn->query("SELECT COUNT(*) as total FROM monitoring WHERE tanggal = '$today' AND status = 'X'")->fetch_assoc()['total'];
+$status_perbaikan = $conn->query("SELECT COUNT(*) as total FROM monitoring WHERE tanggal = '$today' AND status = 'V'")->fetch_assoc()['total'];
 
 // Total issues (need attention = -, X, V)
 $perlu_perhatian = $status_menurun;
@@ -47,7 +47,7 @@ $bermasalah = $status_rusak + $status_perbaikan;
 // Get problematic equipment from today's inspections
 $problem_query = "
     SELECT i.*, e.nama_peralatan, l.nama_lokasi, s.nama_section
-    FROM inspections_daily i
+    FROM monitoring i
     JOIN equipments e ON i.equipment_id = e.id
     JOIN lokasi l ON e.lokasi_id = l.id
     JOIN sections s ON e.section_id = s.id

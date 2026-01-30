@@ -17,7 +17,7 @@ if (isset($_POST['delete_id'])) {
     $delete_id = intval($_POST['delete_id']);
     
     // Get file path first to delete image
-    $stmt = $conn->prepare("SELECT foto FROM kegiatan_inspeksi WHERE id = ?");
+    $stmt = $conn->prepare("SELECT foto FROM inspeksi WHERE id = ?");
     $stmt->bind_param("i", $delete_id);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -29,7 +29,7 @@ if (isset($_POST['delete_id'])) {
     $stmt->close();
     
     // Delete record
-    $stmt = $conn->prepare("DELETE FROM kegiatan_inspeksi WHERE id = ?");
+    $stmt = $conn->prepare("DELETE FROM inspeksi WHERE id = ?");
     $stmt->bind_param("i", $delete_id);
     $stmt->execute();
     header("Location: admin_inspeksi_pengujian.php?deleted=1");
@@ -78,7 +78,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
         $types .= "sss";
     }
 
-    $query = "SELECT * FROM kegiatan_inspeksi WHERE " . implode(' AND ', $where) . " ORDER BY tanggal DESC, created_at DESC";
+    $query = "SELECT * FROM inspeksi WHERE " . implode(' AND ', $where) . " ORDER BY tanggal DESC, created_at DESC";
     $stmt = $conn->prepare($query);
     if (!empty($params)) {
         $stmt->bind_param($types, ...$params);
@@ -93,7 +93,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
 }
 
 // Initial Data Load (Get years only)
-$years_result = $conn->query("SELECT DISTINCT YEAR(tanggal) as year FROM kegiatan_inspeksi ORDER BY year DESC");
+$years_result = $conn->query("SELECT DISTINCT YEAR(tanggal) as year FROM inspeksi ORDER BY year DESC");
 $available_years = [];
 while ($row = $years_result->fetch_assoc()) {
     $available_years[] = $row['year'];

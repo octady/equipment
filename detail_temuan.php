@@ -3,22 +3,22 @@ include "config/database.php";
 include "config/auth.php";
 
 // --- AUTO-SETUP & MIGRATION ---
-$conn->query("CREATE TABLE IF NOT EXISTS inspection_photos (
+$conn->query("CREATE TABLE IF NOT EXISTS dokumentasi_masalah (
     id INT AUTO_INCREMENT PRIMARY KEY,
     inspection_id INT NOT NULL,
     foto_path VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (inspection_id) REFERENCES inspections_daily(id) ON DELETE CASCADE
+    FOREIGN KEY (inspection_id) REFERENCES monitoring(id) ON DELETE CASCADE
 )");
 
 // Migrate existing single photos to new table if they haven't been migrated
-$res_mig = $conn->query("SELECT id, foto FROM inspections_daily WHERE foto IS NOT NULL AND foto != ''");
+$res_mig = $conn->query("SELECT id, foto FROM monitoring WHERE foto IS NOT NULL AND foto != ''");
 while ($row_mig = $res_mig->fetch_assoc()) {
-    $check = $conn->prepare("SELECT id FROM inspection_photos WHERE inspection_id = ? AND foto_path = ?");
+    $check = $conn->prepare("SELECT id FROM dokumentasi_masalah WHERE inspection_id = ? AND foto_path = ?");
     $check->bind_param("is", $row_mig['id'], $row_mig['foto']);
     $check->execute();
     if ($check->get_result()->num_rows == 0) {
-        $ins = $conn->prepare("INSERT INTO inspection_photos (inspection_id, foto_path) VALUES (?, ?)");
+        $ins = $conn->prepare("INSERT INTO dokumentasi_masalah (inspection_id, foto_path) VALUES (?, ?)");
         $ins->bind_param("is", $row_mig['id'], $row_mig['foto']);
         $ins->execute();
     }
@@ -48,7 +48,7 @@ if (!$equipment) {
 }
 
 // Fetch existing inspection for today
-$stmt = $conn->prepare("SELECT * FROM inspections_daily WHERE equipment_id = ? AND tanggal = ?");
+$stmt = $conn->prepare("SELECT * FROM monitoring WHERE equipment_id = ? AND tanggal = ?");
 $stmt->bind_param("is", $eq_id, $today);
 $stmt->execute();
 $inspection = $stmt->get_result()->fetch_assoc();
@@ -64,7 +64,7 @@ if (isset($_GET['delete_photo_id'])) {
     // User said "kembali lagi ke checklist.php dan ttep menyimpan yang diceklist sebelumnya".
     // This implies we prioritize the Draft state.
     // For now, let's keep deletion of *existing* DB photos working.
-    $stmt_del = $conn->prepare("DELETE FROM inspection_photos WHERE id = ?");
+    $stmt_del = $conn->prepare("DELETE FROM dokumentasi_masalah WHERE id = ?");
     $stmt_del->bind_param("i", $photo_id);
     $stmt_del->execute();
     header("Location: detail_temuan.php?id=$eq_id&status=$current_status");
@@ -78,7 +78,7 @@ if (isset($_GET['delete_photo_id'])) {
 // Fetch photos for this exhibition
 $photos = [];
 if ($inspection) {
-    $res_photos = $conn->query("SELECT * FROM inspection_photos WHERE inspection_id = " . $inspection['id'] . " ORDER BY id DESC");
+    $res_photos = $conn->query("SELECT * FROM dokumentasi_masalah WHERE inspection_id = " . $inspection['id'] . " ORDER BY id DESC");
     if ($res_photos) {
         while ($p = $res_photos->fetch_assoc())
             $photos[] = $p;

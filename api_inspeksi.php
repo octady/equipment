@@ -21,7 +21,7 @@ if ($id <= 0 && $action !== 'get_all') {
 switch ($action) {
     case 'delete':
         // Get photo path first to delete file
-        $stmt = $conn->prepare("SELECT foto FROM kegiatan_inspeksi WHERE id = ?");
+        $stmt = $conn->prepare("SELECT foto FROM inspeksi WHERE id = ?");
         $stmt->bind_param("i", $id);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -29,7 +29,7 @@ switch ($action) {
         $stmt->close();
         
         // Delete record
-        $stmt = $conn->prepare("DELETE FROM kegiatan_inspeksi WHERE id = ?");
+        $stmt = $conn->prepare("DELETE FROM inspeksi WHERE id = ?");
         $stmt->bind_param("i", $id);
         
         if ($stmt->execute()) {
@@ -45,7 +45,7 @@ switch ($action) {
         break;
         
     case 'get':
-        $stmt = $conn->prepare("SELECT * FROM kegiatan_inspeksi WHERE id = ?");
+        $stmt = $conn->prepare("SELECT * FROM inspeksi WHERE id = ?");
         $stmt->bind_param("i", $id);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -88,7 +88,7 @@ switch ($action) {
                 $photo_path = $target_file;
                 
                 // Delete old photo
-                $stmt = $conn->prepare("SELECT foto FROM kegiatan_inspeksi WHERE id = ?");
+                $stmt = $conn->prepare("SELECT foto FROM inspeksi WHERE id = ?");
                 $stmt->bind_param("i", $id);
                 $stmt->execute();
                 $result = $stmt->get_result();
@@ -102,10 +102,10 @@ switch ($action) {
         }
         
         if ($photo_path) {
-            $stmt = $conn->prepare("UPDATE kegiatan_inspeksi SET kegiatan=?, lokasi=?, tanggal=?, hasil=?, catatan=?, foto=? WHERE id=?");
+            $stmt = $conn->prepare("UPDATE inspeksi SET kegiatan=?, lokasi=?, tanggal=?, hasil=?, catatan=?, foto=? WHERE id=?");
             $stmt->bind_param("ssssssi", $kegiatan, $lokasi, $tanggal, $hasil, $catatan, $photo_path, $id);
         } else {
-            $stmt = $conn->prepare("UPDATE kegiatan_inspeksi SET kegiatan=?, lokasi=?, tanggal=?, hasil=?, catatan=? WHERE id=?");
+            $stmt = $conn->prepare("UPDATE inspeksi SET kegiatan=?, lokasi=?, tanggal=?, hasil=?, catatan=? WHERE id=?");
             $stmt->bind_param("sssssi", $kegiatan, $lokasi, $tanggal, $hasil, $catatan, $id);
         }
         

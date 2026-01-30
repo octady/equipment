@@ -55,11 +55,11 @@ $sql = "SELECT
             i.keterangan,
             i.checked_by,
             i.created_at,
-            (SELECT foto_path FROM inspection_photos WHERE inspection_id = i.id LIMIT 1) as foto_path
+            (SELECT foto_path FROM dokumentasi_masalah WHERE inspection_id = i.id LIMIT 1) as foto_path
         FROM equipments e
         JOIN sections s ON e.section_id = s.id
         JOIN lokasi l ON e.lokasi_id = l.id
-        JOIN inspections_daily i ON e.id = i.equipment_id AND i.tanggal = ?
+        JOIN monitoring i ON e.id = i.equipment_id AND i.tanggal = ?
         WHERE 1=1";
 
 $types = "s";

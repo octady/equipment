@@ -20,7 +20,7 @@ $date_from = $_GET['date_from'] ?? date('Y-m-01');
 $date_to = $_GET['date_to'] ?? date('Y-m-d');
 
 // Fetch data from database
-$stmt = $conn->prepare("SELECT * FROM kegiatan_inspeksi WHERE tanggal BETWEEN ? AND ? ORDER BY tanggal ASC, id ASC");
+$stmt = $conn->prepare("SELECT * FROM inspeksi WHERE tanggal BETWEEN ? AND ? ORDER BY tanggal ASC, id ASC");
 $stmt->bind_param("ss", $date_from, $date_to);
 $stmt->execute();
 $result = $stmt->get_result();

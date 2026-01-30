@@ -49,7 +49,7 @@ foreach ($items as $index => $item) {
     }
 
     // Insert to database
-    $stmt = $conn->prepare("INSERT INTO kegiatan_inspeksi (kegiatan, lokasi, tanggal, hasil, catatan, foto, user_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
+    $stmt = $conn->prepare("INSERT INTO inspeksi (kegiatan, lokasi, tanggal, hasil, catatan, foto, user_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
     $stmt->bind_param("ssssssi", $kegiatan, $lokasi, $tanggal, $hasil, $catatan, $photo_path, $user_id);
     
     if ($stmt->execute()) {

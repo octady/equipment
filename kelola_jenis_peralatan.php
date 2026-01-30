@@ -144,10 +144,9 @@ while ($s = $res_s->fetch_assoc()) {
 
 // 2. Get All Equipments
 $res_e = $conn->query("
-    SELECT e.id, e.nama_peralatan, e.section_id, l.nama_lokasi, f.nama_fasilitas 
+    SELECT e.id, e.nama_peralatan, e.section_id, e.lokasi_id, l.nama_lokasi 
     FROM equipments e
     LEFT JOIN lokasi l ON e.lokasi_id = l.id
-    LEFT JOIN fasilitas f ON l.fasilitas_id = f.id
     ORDER BY e.nama_peralatan
 ");
 while ($e = $res_e->fetch_assoc()) {

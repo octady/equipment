@@ -58,10 +58,10 @@ $sql = "SELECT
         FROM equipments e
         JOIN sections s ON e.section_id = s.id
         JOIN lokasi l ON e.lokasi_id = l.id
-        JOIN inspections_daily i ON e.id = i.equipment_id AND i.tanggal = ?
+        JOIN monitoring i ON e.id = i.equipment_id AND i.tanggal = ?
         LEFT JOIN (
             SELECT inspection_id, MAX(foto_path) as foto_path 
-            FROM inspection_photos 
+            FROM dokumentasi_masalah 
             GROUP BY inspection_id
         ) ip ON i.id = ip.inspection_id
         WHERE 1=1";
