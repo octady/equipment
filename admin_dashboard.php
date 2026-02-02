@@ -1,50 +1,30 @@
 <?php
-// Admin Dashboard - Equipment Monitoring System
 session_start();
 
-// Check if user is logged in
 if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
     header("Location: login.php");
     exit;
 }
 
-// If not admin, redirect to user dashboard
 if ($_SESSION['role'] !== 'admin') {
     header("Location: dashboard.php");
     exit;
 }
 
-// Get user info from session
 $nama_lengkap = $_SESSION['nama_lengkap'] ?? 'Administrator';
-
-// Database connection
 require_once 'config/database.php';
-
 $today = date('Y-m-d');
-
-// Get total equipment count
 $total_equipment = $conn->query("SELECT COUNT(*) as total FROM equipments")->fetch_assoc()['total'];
-
-// Get total personnel count
 $total_personnel = $conn->query("SELECT COUNT(*) as total FROM personnel")->fetch_assoc()['total'];
-
-// Get total locations count
 $total_lokasi = $conn->query("SELECT COUNT(*) as total FROM lokasi")->fetch_assoc()['total'];
-
-// Get today's inspections
 $total_checked = $conn->query("SELECT COUNT(DISTINCT equipment_id) as total FROM monitoring WHERE tanggal = '$today'")->fetch_assoc()['total'];
-
-// Get status breakdown for today
 $status_normal = $conn->query("SELECT COUNT(*) as total FROM monitoring WHERE tanggal = '$today' AND status = 'O'")->fetch_assoc()['total'];
 $status_menurun = $conn->query("SELECT COUNT(*) as total FROM monitoring WHERE tanggal = '$today' AND status = '-'")->fetch_assoc()['total'];
 $status_rusak = $conn->query("SELECT COUNT(*) as total FROM monitoring WHERE tanggal = '$today' AND status = 'X'")->fetch_assoc()['total'];
 $status_perbaikan = $conn->query("SELECT COUNT(*) as total FROM monitoring WHERE tanggal = '$today' AND status = 'V'")->fetch_assoc()['total'];
-
-// Total issues (need attention = -, X, V)
 $perlu_perhatian = $status_menurun;
 $bermasalah = $status_rusak + $status_perbaikan;
 
-// Get problematic equipment from today's inspections
 $problem_query = "
     SELECT i.*, e.nama_peralatan, l.nama_lokasi, s.nama_section
     FROM monitoring i
@@ -66,7 +46,6 @@ $problem_count = $problem_result->num_rows;
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin Dashboard - Equipment Monitoring System</title>
 <script>
-// Critical: Run BEFORE any rendering to prevent sidebar flicker
 if (localStorage.getItem('sidebarOpen') === 'true') {
     document.documentElement.classList.add('sidebar-open');
 }
@@ -859,6 +838,10 @@ body {
     .quick-links {
         grid-template-columns: repeat(2, 1fr);
     }
+    
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 @media (max-width: 992px) {
@@ -871,33 +854,267 @@ body {
     }
     
     .summary-grid {
-        grid-template-columns: repeat(3, 1fr);
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+    
+    .summary-card {
+        flex: 1 1 30%;
+        min-width: 100px;
+    }
+    
+    .admin-main {
+        padding: 20px 15px;
     }
 }
 
 @media (max-width: 768px) {
     .admin-main {
-        padding: 20px;
+        padding: 70px 15px 15px 15px;
+    }
+    
+    .page-header {
+        padding: 16px;
+        margin-bottom: 20px;
     }
     
     .page-header-content {
         flex-direction: column;
-        align-items: stretch;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    
+    .page-info h1 {
+        font-size: 18px;
+    }
+    
+    .page-info p {
+        font-size: 12px;
+    }
+    
+    .header-date {
+        padding: 8px 12px;
+    }
+    
+    .header-date span {
+        font-size: 12px;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+    
+    .stat-card {
+        padding: 16px;
+        border-radius: 12px;
+    }
+    
+    .stat-value {
+        font-size: 28px;
+    }
+    
+    .stat-label {
+        font-size: 11px;
+    }
+    
+    .stat-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 16px;
+    }
+    
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    
+    .card {
+        border-radius: 12px;
+    }
+    
+    .card-header {
+        padding: 14px 16px;
+    }
+    
+    .card-title {
+        font-size: 14px;
+    }
+    
+    .card-body {
+        padding: 16px;
+    }
+    
+    .quick-links {
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+    
+    .quick-links-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+    
+    .quick-link-item {
+        padding: 12px;
+        gap: 10px;
+    }
+    
+    .quick-link-item .quick-link-icon {
+        width: 32px;
+        height: 32px;
+        font-size: 12px;
+    }
+    
+    .quick-link-item span {
+        font-size: 12px;
+    }
+    
+    .summary-grid {
+        flex-direction: column;
+    }
+    
+    .summary-card {
+        flex: 1 1 100%;
+        padding: 16px;
+    }
+    
+    .summary-value {
+        font-size: 28px;
+    }
+    
+    .summary-label {
+        font-size: 11px;
+    }
+    
+    /* Problem Table Responsive */
+    .problem-table {
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .problem-table th,
+    .problem-table td {
+        padding: 10px 12px;
+        font-size: 12px;
+    }
+    
+    .problem-table th:first-child,
+    .problem-table td:first-child {
+        padding-left: 12px;
+    }
+    
+    .problem-status {
+        font-size: 10px;
+        padding: 3px 8px;
+    }
+}
+
+@media (max-width: 576px) {
+    .admin-main {
+        padding: 65px 10px 10px 10px;
+    }
+    
+    .page-header {
+        padding: 14px;
+        margin-bottom: 16px;
+        border-left-width: 3px;
+    }
+    
+    .page-info h1 {
+        font-size: 16px;
     }
     
     .stats-grid {
         grid-template-columns: 1fr;
+        gap: 10px;
     }
     
-    .quick-links {
-        grid-template-columns: 1fr;
+    .stat-card {
+        padding: 14px;
+        border-radius: 10px;
     }
     
-    .summary-grid {
+    .stat-value {
+        font-size: 24px;
+    }
+    
+    .stat-label {
+        font-size: 10px;
+    }
+    
+    .stat-icon {
+        width: 36px;
+        height: 36px;
+        font-size: 14px;
+    }
+    
+    .dashboard-grid {
+        gap: 12px;
+    }
+    
+    .card {
+        border-radius: 10px;
+    }
+    
+    .card-header {
+        padding: 12px 14px;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    
+    .card-title {
+        font-size: 13px;
+    }
+    
+    .card-title i {
+        font-size: 14px;
+    }
+    
+    .card-action {
+        font-size: 12px;
+    }
+    
+    .card-body {
+        padding: 12px;
+    }
+    
+    .quick-links-grid {
         grid-template-columns: 1fr;
+        gap: 8px;
+    }
+    
+    .quick-link-item {
+        padding: 10px 12px;
+    }
+    
+    .summary-card {
+        padding: 14px;
+    }
+    
+    .summary-value {
+        font-size: 24px;
+    }
+    
+    /* Table Mobile Scroll */
+    .problem-table {
+        min-width: 500px;
+    }
+    
+    .problem-table th,
+    .problem-table td {
+        padding: 8px 10px;
+        font-size: 11px;
+    }
+    
+    .badge-count {
+        font-size: 11px;
+        padding: 3px 8px;
     }
 }
 </style>
+
 </head>
 <body>
 
@@ -1045,6 +1262,7 @@ body {
                 <span class="badge-count"><?= $problem_count ?> Item</span>
             </div>
             <div class="card-body" style="padding: 0;">
+                <div class="table-wrapper" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
                 <table class="problem-table">
                     <thead>
                         <tr>
@@ -1093,13 +1311,13 @@ body {
                         <?php endif; ?>
                     </tbody>
                 </table>
+                </div>
             </div>
         </div>
     </div>
 </main>
 
 <script>
-// Set current date
 document.addEventListener('DOMContentLoaded', function() {
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     const today = new Date();

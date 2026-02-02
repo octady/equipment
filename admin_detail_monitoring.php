@@ -1,14 +1,10 @@
 <?php
 include "config/database.php";
 session_start();
-
-// Admin Auth Check
 if ($_SESSION['role'] != 'admin') {
     header("Location: index.php");
     exit;
 }
-
-// --- AUTO-SETUP & MIGRATION Logic (Kept same as original to ensure stability) ---
 $eq_id = $_GET['id'] ?? null;
 $today = $_GET['date'] ?? date('Y-m-d');
 $is_today = ($today == date('Y-m-d'));
@@ -17,8 +13,6 @@ if (!$eq_id) {
     header("Location: admin_laporan_harian.php?date=$today");
     exit;
 }
-
-// Fetch equipment details
 $stmt = $conn->prepare("SELECT e.*, s.nama_section, l.nama_lokasi FROM equipments e JOIN sections s ON e.section_id = s.id JOIN lokasi l ON e.lokasi_id = l.id WHERE e.id = ?");
 if (!$stmt) die("Error preparing equipment query.");
 $stmt->bind_param("i", $eq_id);
@@ -30,15 +24,12 @@ if (!$equipment) {
     exit;
 }
 
-// Fetch existing inspection
 $stmt = $conn->prepare("SELECT * FROM monitoring WHERE equipment_id = ? AND tanggal = ?");
 $stmt->bind_param("is", $eq_id, $today);
 $stmt->execute();
 $inspection = $stmt->get_result()->fetch_assoc();
 
 $current_status = $inspection['status'] ?? 'O';
-
-// Parse Keterangan to split General Notes vs Detail Masalah
 $full_keterangan = $inspection['keterangan'] ?? '';
 $delimiter = '[DETAIL MASALAH]:';
 $keterangan_border = strpos($full_keterangan, $delimiter);
@@ -50,28 +41,18 @@ if ($keterangan_border !== false) {
     $keterangan_umum = $full_keterangan;
     $keterangan_masalah = '';
 }
-
-// Logic: 
-// 1. If Status is Normal ('O'), default the note to "Normal" if empty.
-// 2. If Status is NOT Normal, and the note says "Normal", CLEAR IT (because it contradicts).
 if ($current_status === 'O') {
     if (empty($keterangan_umum) || $keterangan_umum === 'Normal') {
         $keterangan_umum = 'Normal';
     }
 } else {
-    // Status is NOT Normal (Menurun, Rusak, etc.)
     if ($keterangan_umum === 'Normal') {
-        $keterangan_umum = ''; // Clear it because it doesn't make sense
+        $keterangan_umum = ''; 
     }
 }
 
-// Handle Save
 if (isset($_POST['save_detail'])) {
-    // Admin Override: Allow editing past dates? 
-    // For now, enforcing same rule: Only edit if today. 
-    // IF we want admins to edit history, remove the !$is_today check.
     if (!$is_today) {
-        // Prevent backend save if not today
         die("Editing past records is restricted.");
     }
 
@@ -80,18 +61,12 @@ if (isset($_POST['save_detail'])) {
         $ket .= "\n\n[DETAIL MASALAH]: " . $_POST['keterangan_masalah'];
     }
     $status = $_POST['status'] ?? $current_status;
-
-    // Use logged in admin name or preserve existing checker name?
-    // If updating, ideally we append or keep. 
-    // For simplicity, we'll keep the original checker if it exists, or add Admin if new.
-    
-    if ($inspection) {
+ if ($inspection) {
         $stmt = $conn->prepare("UPDATE monitoring SET status = ?, keterangan = ? WHERE id = ?");
         $stmt->bind_param("ssi", $status, $ket, $inspection['id']);
         $stmt->execute();
         $inspection_id = $inspection['id'];
     } else {
-        // Create new inspection
         $stmt = $conn->prepare("INSERT INTO monitoring (equipment_id, tanggal, status, keterangan, checked_by) VALUES (?, ?, ?, ?, ?)");
         $user_name = $_SESSION['nama_lengkap'] ?? 'Admin'; 
         $stmt->bind_param("issss", $eq_id, $today, $status, $ket, $user_name);
@@ -99,7 +74,6 @@ if (isset($_POST['save_detail'])) {
         $inspection_id = $conn->insert_id;
     }
 
-    // Handle Photos
     $upload_dir = "assets/uploads/inspections/";
     if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
 
@@ -122,22 +96,17 @@ if (isset($_POST['save_detail'])) {
     exit;
 }
 
-// Handle Photo Deletion
 if (isset($_POST['delete_photo_id'])) {
     $del_id = intval($_POST['delete_photo_id']);
-    // Check ownership/validity
-    // Admin can delete any photo for this inspection
     $stmt_check = $conn->prepare("SELECT foto_path FROM dokumentasi_masalah WHERE id = ? AND inspection_id = ?");
     $stmt_check->bind_param("ii", $del_id, $inspection['id']);
     $stmt_check->execute();
     $res_check = $stmt_check->get_result();
     
     if ($row = $res_check->fetch_assoc()) {
-        // Delete file
         if (file_exists($row['foto_path'])) {
             unlink($row['foto_path']);
         }
-        // Delete DB record
         $stmt_del = $conn->prepare("DELETE FROM dokumentasi_masalah WHERE id = ?");
         $stmt_del->bind_param("i", $del_id);
         $stmt_del->execute();
@@ -145,7 +114,6 @@ if (isset($_POST['delete_photo_id'])) {
     header("Location: admin_detail_monitoring.php?id=$eq_id&date=$today");
     exit;
 }
-
 
 // Fetch photos
 $photos = [];
@@ -675,16 +643,11 @@ if ($inspection) {
 
 <script>
     function updateStatus(startNode) {
-        // Sync to hidden input
         document.getElementById('statusInput').value = startNode.value;
-        
-        // Toggle Conditional Form
         const form = document.getElementById('extraForm');
         if (startNode.value !== 'O') {
             form.style.display = 'block';
         } else {
-            // Check if there is content in the textarea OR view div (since we might have content but empty textarea if not edited yet? no, textarea has content)
-            // Actually check the PHP value rendered into textarea
             const problemText = document.getElementById('edit_masalah').value.trim();
             if (problemText.length > 0) {
                  form.style.display = 'block';
@@ -704,7 +667,7 @@ if ($inspection) {
             cancelButtonColor: '#3085d6',
             confirmButtonText: 'Ya, Hapus!',
             cancelButtonText: 'Batal',
-            width: '320px', // Compact size
+            width: '320px', 
             customClass: {
                 popup: 'small-swal-popup'
             }
@@ -742,8 +705,6 @@ if ($inspection) {
             });
         }
     }
-    
-    // Initial check
     updateStatus(document.querySelector('input[name="status_visible"]:checked') || {value: '<?= $current_status ?>'});
 </script>
 

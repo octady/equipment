@@ -2,20 +2,10 @@
 include "config/database.php";
 include "config/auth.php";
 
-/* ================= AJAX ================= */
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     header('Content-Type: application/json');
     $action = $_POST['action'] ?? '';
 
-    // ADD ACTION REMOVED - Please use section.php for full control
-    // Or we could implement simple add here?
-    // Let's keep it consistent, if user wants to add section, better do it in section.php
-    // But for now, let's just disabling add to prevent errors, or allow adding with defaults?
-    // User didn't ask to remove ADD.
-    // I'll leave add but make it insert into sections with default/generated values for required fields if possible, or error.
-    // Actually, safest is to remove the Add button in UI and here.
-
-    // EQUIPMENT ACTIONS
     if ($action === 'add_equipment') {
         $nama = trim($_POST['nama_peralatan'] ?? '');
         $lokasi_id = intval($_POST['lokasi_id'] ?? 0);
@@ -71,7 +61,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
         exit;
     }
 
-    // SECTION ACTIONS
     if ($action === 'add') {
         $nama = trim($_POST['nama_jenis'] ?? '');
 
@@ -553,6 +542,169 @@ $data = array_values($data);
         div:where(.swal2-container) button:where(.swal2-styled).swal2-cancel {
             background-color: #f1f5f9 !important;
             color: #64748b !important;
+        }
+        
+        /* Responsive */
+        @media (max-width: 992px) {
+            .container {
+                padding: 20px 15px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px 10px;
+            }
+            
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+            
+            .header h2 {
+                font-size: 20px;
+            }
+            
+            .search-box {
+                flex-direction: column !important;
+            }
+            
+            .search-box input {
+                width: 100%;
+            }
+            
+            .search-box button {
+                width: 100%;
+            }
+            
+            .section-header {
+                padding: 16px 18px;
+            }
+            
+            .section-title {
+                font-size: 14px;
+            }
+            
+            .body-content {
+                padding: 16px;
+            }
+            
+            .action-buttons {
+                flex-wrap: wrap;
+                justify-content: flex-start;
+                gap: 8px;
+            }
+            
+            .btn-edit, .btn-delete {
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+            
+            .equipment-item {
+                padding: 12px 0;
+            }
+            
+            .eq-name {
+                font-size: 14px;
+            }
+            
+            .eq-loc {
+                font-size: 12px;
+            }
+            
+            .modal-box {
+                max-width: 90%;
+                margin: 20px;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .container {
+                padding: 12px 8px;
+            }
+            
+            .header h2 {
+                font-size: 18px;
+            }
+            
+            .btn-add {
+                width: 100%;
+                padding: 10px 16px;
+                font-size: 14px;
+            }
+            
+            .section-header {
+                padding: 14px 16px;
+            }
+            
+            .section-icon {
+                margin-right: 12px;
+                font-size: 12px;
+            }
+            
+            .section-title {
+                font-size: 13px;
+            }
+            
+            .count-badge {
+                font-size: 11px;
+                padding: 4px 10px;
+            }
+            
+            .btn-add-eq {
+                width: 28px;
+                height: 28px;
+            }
+            
+            .section-meta {
+                margin-left: 12px;
+                gap: 8px !important;
+            }
+            
+            .body-content {
+                padding: 14px;
+                gap: 16px;
+            }
+            
+            .action-buttons {
+                padding-bottom: 14px;
+            }
+            
+            .btn-edit, .btn-delete {
+                flex: 1 1 100%;
+                justify-content: center;
+            }
+            
+            .equipment-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            
+            .eq-actions {
+                opacity: 1;
+            }
+            
+            .modal-box {
+                max-width: 95%;
+                padding: 16px;
+                margin: 10px;
+            }
+            
+            .modal-box h3 {
+                font-size: 16px;
+            }
+            
+            input {
+                padding: 10px;
+                font-size: 14px;
+            }
+            
+            select {
+                padding: 10px !important;
+                font-size: 14px !important;
+            }
         }
     </style>
 </head>

@@ -2,7 +2,6 @@
 include "config/database.php";
 include "config/auth.php";
 
-/* ================= AJAX ================= */
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     header('Content-Type: application/json');
     $action = $_POST['action'] ?? '';
@@ -33,7 +32,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
             echo json_encode(['success' => false, 'message' => 'Data tidak valid']);
             exit;
         }
-        // Only update name, preserve existing facility
         $stmt = $conn->prepare("UPDATE lokasi SET nama_lokasi=? WHERE id=?");
         $stmt->bind_param("si", $nama, $id);
         echo json_encode(
@@ -64,7 +62,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     }
 }
 
-/* ================= DATA ================= */
 $q = "SELECT l.id, l.nama_lokasi, COUNT(e.id) equipment_count
       FROM lokasi l
       LEFT JOIN equipments e ON l.id=e.lokasi_id
@@ -88,7 +85,6 @@ $total_equipment = array_sum(array_column($data, 'equipment_count'));
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kelola Lokasi</title>
     <script>
-    // Critical: Run BEFORE any rendering to prevent sidebar flicker
     if (localStorage.getItem('sidebarOpen') === 'true') {
         document.documentElement.classList.add('sidebar-open');
     }
@@ -290,9 +286,154 @@ $total_equipment = array_sum(array_column($data, 'equipment_count'));
 
         .btn-delete { background: #fee2e2; color: #ef4444; }
         .btn-delete:hover { background: #ef4444; color: white; }
+        
+        /* Responsive */
+        @media (max-width: 992px) {
+            .admin-main {
+                padding: 25px 15px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .admin-main {
+                padding: 70px 15px 15px 15px;
+            }
+            
+            .container {
+                max-width: 100%;
+            }
+            
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+            
+            .header h2 {
+                font-size: 20px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 12px;
+            }
+            
+            .stat-card {
+                padding: 16px;
+            }
+            
+            .stat-icon {
+                width: 40px;
+                height: 40px;
+                font-size: 20px;
+            }
+            
+            .stat-info h3 {
+                font-size: 20px;
+            }
+            
+            .stat-info p {
+                font-size: 12px;
+            }
+            
+            .search-box {
+                flex-direction: column;
+            }
+            
+            .search-box input {
+                width: 100%;
+            }
+            
+            .search-box button {
+                width: 100%;
+            }
+            
+            /* Table Responsive */
+            table {
+                display: block;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            th, td {
+                padding: 12px 10px;
+            }
+            
+            .modal-box {
+                max-width: 90%;
+                margin: 20px;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .admin-main {
+                padding: 65px 10px 10px 10px;
+            }
+            
+            .header h2 {
+                font-size: 18px;
+            }
+            
+            .btn-add {
+                padding: 8px 12px;
+                font-size: 13px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            
+            .stat-card {
+                padding: 14px;
+            }
+            
+            .stat-icon {
+                width: 36px;
+                height: 36px;
+                font-size: 18px;
+            }
+            
+            .stat-info h3 {
+                font-size: 18px;
+            }
+            
+            /* Table minimum width */
+            table {
+                min-width: 400px;
+            }
+            
+            th, td {
+                padding: 10px 8px;
+                font-size: 13px;
+            }
+            
+            .badge {
+                font-size: 11px;
+                padding: 3px 8px;
+            }
+            
+            .action-btn {
+                width: 32px;
+                height: 32px;
+            }
+            
+            .modal-box {
+                max-width: 95%;
+                padding: 16px;
+                margin: 10px;
+            }
+            
+            .modal-box h3 {
+                font-size: 16px;
+            }
+            
+            .modal-box input {
+                padding: 10px;
+                font-size: 14px;
+            }
+        }
     </style>
-</head>
-
 </head>
 
 <body>
@@ -343,6 +484,7 @@ $total_equipment = array_sum(array_column($data, 'equipment_count'));
                 </button>
             </div>
 
+            <div class="table-wrapper" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
             <table>
                 <thead>
                     <tr>
@@ -376,6 +518,7 @@ $total_equipment = array_sum(array_column($data, 'equipment_count'));
                     <?php endforeach ?>
                 </tbody>
             </table>
+            </div>
         </div>
 
         <!-- MODAL -->
@@ -435,7 +578,6 @@ $total_equipment = array_sum(array_column($data, 'equipment_count'));
                     fd.append('action', 'add');
                 }
 
-                // Debugging
                 console.log('Sending data...', Object.fromEntries(fd));
 
                 fetch('', {
@@ -524,9 +666,6 @@ $total_equipment = array_sum(array_column($data, 'equipment_count'));
 
                 rows.forEach(r => {
                     const name = r.dataset.name.toLowerCase();
-                    // Pencarian 'fuzzy' sederhana (includes) sudah cukup untuk sebagian besar kasus
-                    // Jika user ingin "terminal 1" ketemu dengan "term 1", itu butuh regex lebih kompleks.
-                    // Tapi user bilang "ga harus spesifik", biasanya maksudnya case-insensitive & partial match.
                     if (name.includes(q)) {
                         r.style.display = '';
                     } else {
