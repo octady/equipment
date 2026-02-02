@@ -44,14 +44,14 @@ if ($filter_month && $filter_year) {
 }
 
 if ($search) {
-    $where[] = "(dibuat_oleh LIKE ? OR jabatan LIKE ?)";
+    $where[] = "(p.nama_personnel LIKE ? OR p.jabatan LIKE ?)";
     $searchParam = "%$search%";
     $params[] = $searchParam;
     $params[] = $searchParam;
     $types .= "ss";
 }
 
-$query = "SELECT * FROM laporan_pengukuran WHERE " . implode(' AND ', $where) . " ORDER BY tanggal DESC, created_at DESC";
+$query = "SELECT lp.*, p.nama_personnel, p.jabatan FROM laporan_pengukuran lp LEFT JOIN personnel p ON lp.personel_id = p.id WHERE " . implode(' AND ', $where) . " ORDER BY lp.tanggal DESC, lp.created_at DESC";
 $stmt = $conn->prepare($query);
 if (!empty($params)) {
     $stmt->bind_param($types, ...$params);
@@ -333,8 +333,8 @@ $indo_months = [
                             <?= $indo_months[intval(date('m', strtotime($report['tanggal'])))] ?>
                             <?= date('Y', strtotime($report['tanggal'])) ?>
                         </td>
-                        <td><?= htmlspecialchars($report['dibuat_oleh']) ?></td>
-                        <td><?= htmlspecialchars($report['jabatan']) ?></td>
+                        <td><?= htmlspecialchars($report['nama_personnel'] ?? '-') ?></td>
+                        <td><?= htmlspecialchars($report['jabatan'] ?? '-') ?></td>
                         <td><?= date('d/m/Y H:i', strtotime($report['created_at'])) ?></td>
                         <td>
                             <div style="display: flex; gap: 8px;">
@@ -377,8 +377,8 @@ $indo_months = [
         return [
             'id' => $r['id'],
             'tanggal' => $r['tanggal'],
-            'dibuat_oleh' => $r['dibuat_oleh'],
-            'jabatan' => $r['jabatan'],
+            'dibuat_oleh' => $r['nama_personnel'] ?? '-',
+            'jabatan' => $r['jabatan'] ?? '-',
             'tahanan_isolasi_data' => json_decode($r['tahanan_isolasi_data'] ?: '[]', true),
             'simulasi_genset_data' => json_decode($r['simulasi_genset_data'] ?: '[]', true),
             'simulasi_ups_data' => json_decode($r['simulasi_ups_data'] ?: '[]', true)

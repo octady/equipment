@@ -23,8 +23,8 @@ if (!$report_id) {
     exit;
 }
 
-// Fetch report from database
-$stmt = $conn->prepare("SELECT * FROM laporan_pengukuran WHERE id = ?");
+// Fetch report from database with personnel data
+$stmt = $conn->prepare("SELECT lp.*, p.nama_personnel, p.jabatan FROM laporan_pengukuran lp LEFT JOIN personnel p ON lp.personel_id = p.id WHERE lp.id = ?");
 $stmt->bind_param("i", $report_id);
 $stmt->execute();
 $result = $stmt->get_result();
@@ -36,8 +36,8 @@ if (!$report) {
 }
 
 $tanggal = $report['tanggal'];
-$dibuatOleh = $report['dibuat_oleh'];
-$jabatan = $report['jabatan'];
+$dibuatOleh = $report['nama_personnel'] ?? '-';
+$jabatan = $report['jabatan'] ?? '-';
 $tahananIsolasiData = json_decode($report['tahanan_isolasi_data'], true) ?? [];
 $simulasiGensetData = json_decode($report['simulasi_genset_data'], true) ?? [];
 $simulasiUPSData = json_decode($report['simulasi_ups_data'], true) ?? [];

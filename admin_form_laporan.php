@@ -26,8 +26,7 @@ if (isset($_POST['delete_report'])) {
 // Handle Save
 if (isset($_POST['save_report'])) {
     $tanggal = $_POST['tanggal'] ?? date('Y-m-d');
-    $dibuat_oleh = $_POST['dibuat_oleh'] ?? '';
-    $jabatan = $_POST['jabatan'] ?? '';
+    $personel_id = $_POST['personel_id'] ?? null;
     $tahanan_isolasi = $_POST['tahanan_isolasi_json'] ?? '[]';
     $simulasi_genset = $_POST['simulasi_genset_json'] ?? '[]';
     $simulasi_ups = $_POST['simulasi_ups_json'] ?? '[]';
@@ -37,11 +36,11 @@ if (isset($_POST['save_report'])) {
     $edit_id = $_POST['edit_id'] ?? null;
     
     if ($edit_id) {
-        $stmt = $conn->prepare("UPDATE laporan_pengukuran SET tanggal = ?, dibuat_oleh = ?, jabatan = ?, tahanan_isolasi_data = ?, simulasi_genset_data = ?, simulasi_ups_data = ? WHERE id = ?");
-        $stmt->bind_param("ssssssi", $tanggal, $dibuat_oleh, $jabatan, $tahanan_isolasi, $simulasi_genset, $simulasi_ups, $edit_id);
+        $stmt = $conn->prepare("UPDATE laporan_pengukuran SET tanggal = ?, personel_id = ?, tahanan_isolasi_data = ?, simulasi_genset_data = ?, simulasi_ups_data = ? WHERE id = ?");
+        $stmt->bind_param("sisssi", $tanggal, $personel_id, $tahanan_isolasi, $simulasi_genset, $simulasi_ups, $edit_id);
     } else {
-        $stmt = $conn->prepare("INSERT INTO laporan_pengukuran (tanggal, dibuat_oleh, jabatan, tahanan_isolasi_data, simulasi_genset_data, simulasi_ups_data, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("ssssssi", $tanggal, $dibuat_oleh, $jabatan, $tahanan_isolasi, $simulasi_genset, $simulasi_ups, $user_id);
+        $stmt = $conn->prepare("INSERT INTO laporan_pengukuran (tanggal, personel_id, tahanan_isolasi_data, simulasi_genset_data, simulasi_ups_data, user_id) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("sisssi", $tanggal, $personel_id, $tahanan_isolasi, $simulasi_genset, $simulasi_ups, $user_id);
     }
     
     if ($stmt->execute()) {
@@ -58,7 +57,7 @@ $edit_mode = false;
 
 if (isset($_GET['id'])) {
     $report_id = intval($_GET['id']);
-    $stmt = $conn->prepare("SELECT * FROM laporan_pengukuran WHERE id = ?");
+    $stmt = $conn->prepare("SELECT lp.*, p.nama_personnel, p.jabatan FROM laporan_pengukuran lp LEFT JOIN personnel p ON lp.personel_id = p.id WHERE lp.id = ?");
     $stmt->bind_param("i", $report_id);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -82,7 +81,7 @@ if ($res_p) {
 $my_reports = [];
 $user_id = $_SESSION['user_id'] ?? null;
 if ($user_id) {
-    $res_reports = $conn->query("SELECT id, tanggal, dibuat_oleh, created_at FROM laporan_pengukuran WHERE created_by = $user_id ORDER BY tanggal DESC LIMIT 10");
+    $res_reports = $conn->query("SELECT lp.id, lp.tanggal, p.nama_personnel, lp.created_at FROM laporan_pengukuran lp LEFT JOIN personnel p ON lp.personel_id = p.id WHERE lp.user_id = $user_id ORDER BY lp.tanggal DESC LIMIT 10");
     if ($res_reports) {
         while ($row = $res_reports->fetch_assoc())
             $my_reports[] = $row;
@@ -669,7 +668,7 @@ if (localStorage.getItem('sidebarOpen') === 'true') {
             <i class="fas fa-check-circle"></i>
             <div class="banner-text">
                 <h3>Laporan Tersimpan</h3>
-                <p>Tanggal: <?= date('d', strtotime($saved_report['tanggal'])) ?> <?= $indo_months[intval(date('m', strtotime($saved_report['tanggal'])))] ?> <?= date('Y', strtotime($saved_report['tanggal'])) ?> | Oleh: <?= htmlspecialchars($saved_report['dibuat_oleh']) ?></p>
+                <p>Tanggal: <?= date('d', strtotime($saved_report['tanggal'])) ?> <?= $indo_months[intval(date('m', strtotime($saved_report['tanggal'])))] ?> <?= date('Y', strtotime($saved_report['tanggal'])) ?> | Oleh: <?= htmlspecialchars($saved_report['nama_personnel'] ?? '-') ?></p>
             </div>
         </div>
         <?php endif; ?>
@@ -694,10 +693,10 @@ if (localStorage.getItem('sidebarOpen') === 'true') {
                     <div class="meta-item">
                         <i class="fas fa-user"></i>
                         <label>Dibuat Oleh:</label>
-                        <select id="dibuatOleh">
+                        <select id="personelId">
                             <option value="">-- Pilih Personnel --</option>
                             <?php foreach ($personnel_list as $p): ?>
-                                <option value="<?= htmlspecialchars($p['nama_personnel']) ?>" data-jabatan="<?= htmlspecialchars($p['jabatan']) ?>">
+                                <option value="<?= $p['id'] ?>" <?= ($saved_report && $saved_report['personel_id'] == $p['id']) ? 'selected' : '' ?>>
                                     <?= htmlspecialchars($p['nama_personnel']) ?> - <?= htmlspecialchars($p['jabatan']) ?>
                                 </option>
                             <?php endforeach; ?>
@@ -843,8 +842,7 @@ if (localStorage.getItem('sidebarOpen') === 'true') {
                     <form method="POST" id="saveForm" style="display: inline;">
                         <input type="hidden" name="save_report" value="1">
                         <input type="hidden" name="tanggal" id="saveTanggal">
-                        <input type="hidden" name="dibuat_oleh" id="saveDibuatOleh">
-                        <input type="hidden" name="jabatan" id="saveJabatan">
+                        <input type="hidden" name="personel_id" id="savePersonelId">
                         <input type="hidden" name="tahanan_isolasi_json" id="saveTahananIsolasi">
                         <input type="hidden" name="simulasi_genset_json" id="saveSimulasiGenset">
                         <input type="hidden" name="simulasi_ups_json" id="saveSimulasiUps">
@@ -867,8 +865,7 @@ if (localStorage.getItem('sidebarOpen') === 'true') {
                     <form method="POST" id="saveForm" style="display: inline;">
                         <input type="hidden" name="save_report" value="1">
                         <input type="hidden" name="tanggal" id="saveTanggal">
-                        <input type="hidden" name="dibuat_oleh" id="saveDibuatOleh">
-                        <input type="hidden" name="jabatan" id="saveJabatan">
+                        <input type="hidden" name="personel_id" id="savePersonelId">
                         <input type="hidden" name="tahanan_isolasi_json" id="saveTahananIsolasi">
                         <input type="hidden" name="simulasi_genset_json" id="saveSimulasiGenset">
                         <input type="hidden" name="simulasi_ups_json" id="saveSimulasiUps">
@@ -1398,12 +1395,16 @@ if (localStorage.getItem('sidebarOpen') === 'true') {
 
         async function downloadExcel() {
             const tanggal = document.getElementById('tanggalLaporan').value;
-            const selectEl = document.getElementById('dibuatOleh');
-            const dibuatOleh = selectEl.value;
-            const selectedOption = selectEl.options[selectEl.selectedIndex];
-            const jabatan = selectedOption ? selectedOption.getAttribute('data-jabatan') || '' : '';
+            const selectEl = document.getElementById('personelId');
+            const personelId = selectEl.value;
             
-            if (!dibuatOleh) {
+            // Lookup personnel data from list
+            const personnelList = <?= json_encode($personnel_list) ?>;
+            const selectedPersonnel = personnelList.find(p => p.id == personelId);
+            const dibuatOleh = selectedPersonnel ? selectedPersonnel.nama_personnel : '';
+            const jabatan = selectedPersonnel ? selectedPersonnel.jabatan : '';
+            
+            if (!personelId) {
                 alert('Silakan pilih personnel terlebih dahulu!');
                 return;
             }
@@ -1713,15 +1714,14 @@ if (localStorage.getItem('sidebarOpen') === 'true') {
         function saveReport() {
             // Validate
             const tanggal = document.getElementById('tanggalLaporan').value;
-            const dibuatOleh = document.getElementById('dibuatOleh').value;
-            const jabatan = <?= json_encode($personnel_list) ?>.find(p => p.nama_personnel === dibuatOleh)?.jabatan || '';
+            const personelId = document.getElementById('personelId').value;
             
             if (!tanggal) {
                 alert('Mohon isi tanggal terlebih dahulu!');
                 return;
             }
-            if (!dibuatOleh) {
-                alert('Mohon pilih/isi nama personel terlebih dahulu!');
+            if (!personelId) {
+                alert('Mohon pilih personnel terlebih dahulu!');
                 return;
             }
             
@@ -1792,8 +1792,7 @@ if (localStorage.getItem('sidebarOpen') === 'true') {
             
             // Set form values
             document.getElementById('saveTanggal').value = tanggal;
-            document.getElementById('saveDibuatOleh').value = dibuatOleh;
-            document.getElementById('saveJabatan').value = jabatan;
+            document.getElementById('savePersonelId').value = personelId;
             document.getElementById('saveTahananIsolasi').value = JSON.stringify(tahananIsolasiData);
             document.getElementById('saveSimulasiGenset').value = JSON.stringify(simulasiGensetData);
             document.getElementById('saveSimulasiUps').value = JSON.stringify(simulasiUPSData);
@@ -1807,9 +1806,8 @@ if (localStorage.getItem('sidebarOpen') === 'true') {
         // ========================================
         <?php if ($saved_report): ?>
         document.addEventListener('DOMContentLoaded', function() {
-            // Set date and personnel
+            // Set date (personnel is already set via PHP selected attribute)
             document.getElementById('tanggalLaporan').value = '<?= $saved_report['tanggal'] ?>';
-            document.getElementById('dibuatOleh').value = '<?= htmlspecialchars($saved_report['dibuat_oleh']) ?>';
             
             // Load Tahanan Isolasi data - REPLACE default data with saved data
             const savedTahananIsolasi = <?= $saved_report['tahanan_isolasi_data'] ?: '[]' ?>;

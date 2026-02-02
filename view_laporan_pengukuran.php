@@ -14,8 +14,8 @@ if (!$report_id) {
     exit;
 }
 
-// Fetch report
-$stmt = $conn->prepare("SELECT * FROM laporan_pengukuran WHERE id = ?");
+// Fetch report with personnel data
+$stmt = $conn->prepare("SELECT lp.*, p.nama_personnel, p.jabatan FROM laporan_pengukuran lp LEFT JOIN personnel p ON lp.personel_id = p.id WHERE lp.id = ?");
 $stmt->bind_param("i", $report_id);
 $stmt->execute();
 $result = $stmt->get_result();
@@ -258,11 +258,11 @@ $backUrl = $_SESSION['role'] == 'admin' ? 'admin_laporan_pengukuran.php' : 'form
                 </div>
                 <div class="meta-item">
                     <i class="fas fa-user"></i>
-                    <span><strong>Dibuat Oleh:</strong> <?= htmlspecialchars($report['dibuat_oleh']) ?></span>
+                    <span><strong>Dibuat Oleh:</strong> <?= htmlspecialchars($report['nama_personnel'] ?? '-') ?></span>
                 </div>
                 <div class="meta-item">
                     <i class="fas fa-briefcase"></i>
-                    <span><strong>Jabatan:</strong> <?= htmlspecialchars($report['jabatan']) ?></span>
+                    <span><strong>Jabatan:</strong> <?= htmlspecialchars($report['jabatan'] ?? '-') ?></span>
                 </div>
             </div>
         </div>
