@@ -19,9 +19,16 @@ html.sidebar-open .sidebar-trigger {
     opacity: 0 !important;
     visibility: hidden !important;
 }
-/* Push all content by adding padding to body - this preserves container centering */
+/* Push all content by adding padding to body - ONLY on desktop */
 html.sidebar-open body {
     padding-left: 280px !important;
+}
+
+/* On tablet/mobile, sidebar is overlay - no body push */
+@media (max-width: 992px) {
+    html.sidebar-open body {
+        padding-left: 0 !important;
+    }
 }
 </style>
 <style>
@@ -70,8 +77,11 @@ html.sidebar-open body {
     position: fixed;
     top: 0;
     left: 0;
+    bottom: 0;
     width: 280px;
-    height: 100vh;
+    height: 100%;
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
     background: linear-gradient(180deg, #0F4C5C 0%, #0a3640 100%);
     z-index: 1000;
     transform: translateX(-100%);
@@ -79,11 +89,11 @@ html.sidebar-open body {
     box-shadow: 4px 0 25px rgba(0, 0, 0, 0.15);
     display: flex;
     flex-direction: column;
+    overflow-y: auto;
 }
 
 .admin-sidebar.active {
     transform: translateX(0);
-}
 }
 
 /* Sidebar Header */
@@ -300,6 +310,11 @@ html.sidebar-open body {
     .admin-sidebar.active ~ .admin-main {
         margin-left: 0;
     }
+    
+    /* Disable body push on tablet/mobile - sidebar overlays */
+    html.sidebar-open body {
+        padding-left: 0 !important;
+    }
 }
 
 @media (max-width: 768px) {
@@ -313,8 +328,88 @@ html.sidebar-open body {
         width: 44px;
         height: 44px;
     }
+    
+    .sidebar-logo {
+        height: 80px;
+    }
+    
+    .sidebar-header {
+        padding: 16px;
+    }
+    
+    .sidebar-nav {
+        padding: 16px 10px;
+    }
+    
+    .nav-link {
+        padding: 10px 12px;
+        font-size: 13px;
+    }
+    
+    .sidebar-footer {
+        padding: 12px 16px;
+    }
+    
+    .admin-profile {
+        padding: 12px;
+    }
+    
+    .admin-avatar {
+        width: 38px;
+        height: 38px;
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 576px) {
+    .admin-sidebar {
+        width: 100%;
+        max-width: 280px;
+    }
+    
+    .sidebar-trigger {
+        top: 12px;
+        left: 12px;
+        width: 40px;
+        height: 40px;
+    }
+    
+    .sidebar-trigger i {
+        font-size: 18px;
+    }
+    
+    /* Prevent body scroll when sidebar open on mobile */
+    html.sidebar-open body {
+        overflow: hidden;
+    }
+}
+
+/* Sidebar Overlay Backdrop for Mobile */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.sidebar-overlay.active {
+    display: block;
+    opacity: 1;
+}
+
+@media (min-width: 993px) {
+    .sidebar-overlay {
+        display: none !important;
+    }
 }
 </style>
+
 
 <!-- Sidebar Trigger Button (Hamburger) -->
 <button class="sidebar-trigger" id="sidebarTrigger">
@@ -420,18 +515,36 @@ html.sidebar-open body {
     </div>
 </aside>
 
+<!-- Sidebar Overlay for Mobile -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
 <script>
 // Sidebar Elements
 const sidebar = document.getElementById('adminSidebar');
 const sidebarTrigger = document.getElementById('sidebarTrigger');
 const sidebarClose = document.getElementById('sidebarClose');
+const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+// Check if mobile
+function isMobile() {
+    return window.innerWidth <= 992;
+}
 
 // Function to open sidebar and save state
 function openSidebar() {
     document.documentElement.classList.add('sidebar-open');
     sidebar.classList.add('active');
     sidebarTrigger.classList.add('hidden');
-    localStorage.setItem('sidebarOpen', 'true');
+    
+    // Show overlay on mobile/tablet
+    if (isMobile() && sidebarOverlay) {
+        sidebarOverlay.classList.add('active');
+    }
+    
+    // Only save state on desktop
+    if (!isMobile()) {
+        localStorage.setItem('sidebarOpen', 'true');
+    }
 }
 
 // Function to close sidebar and save state
@@ -439,17 +552,32 @@ function closeSidebar() {
     document.documentElement.classList.remove('sidebar-open');
     sidebar.classList.remove('active');
     sidebarTrigger.classList.remove('hidden');
+    
+    // Hide overlay
+    if (sidebarOverlay) {
+        sidebarOverlay.classList.remove('active');
+    }
+    
     localStorage.setItem('sidebarOpen', 'false');
 }
 
-// Open sidebar on hover trigger
-sidebarTrigger.addEventListener('mouseenter', openSidebar);
+// Open sidebar on hover trigger (desktop only)
+sidebarTrigger.addEventListener('mouseenter', function() {
+    if (!isMobile()) {
+        openSidebar();
+    }
+});
 
 // Also support click
 sidebarTrigger.addEventListener('click', openSidebar);
 
-// Close sidebar only with close button
+// Close sidebar with close button
 sidebarClose.addEventListener('click', closeSidebar);
+
+// Close sidebar when clicking overlay
+if (sidebarOverlay) {
+    sidebarOverlay.addEventListener('click', closeSidebar);
+}
 
 // Toggle submenu
 function toggleSubmenu(element) {
@@ -459,34 +587,25 @@ function toggleSubmenu(element) {
 
 // Set active link and restore sidebar state on page load
 document.addEventListener('DOMContentLoaded', function() {
-    // Restore sidebar state from localStorage
+    // Restore sidebar state from localStorage (desktop only)
     const sidebarState = localStorage.getItem('sidebarOpen');
-    if (sidebarState === 'true') {
+    if (sidebarState === 'true' && !isMobile()) {
         sidebar.classList.add('active');
         sidebarTrigger.classList.add('hidden');
     }
-
-    // JS Active Link Logic Disabled - Relying on PHP
-    // const currentPage = window.location.pathname.split('/').pop();
-    // const navLinks = document.querySelectorAll('.nav-link');
     
-    // navLinks.forEach(link => {
-    //     // link.classList.remove('active'); // Don't remove PHP active class
-    //     const href = link.getAttribute('href');
-    //     if (href === currentPage) {
-    //        // link.classList.add('active');
-    //         const parentSubmenu = link.closest('.nav-submenu');
-    //         if (parentSubmenu) {
-    //             parentSubmenu.parentElement.classList.add('open');
-    //         }
-    //     }
-    // });
-    
-    // If no link is active, set dashboard as active
-    // const activeLinks = document.querySelectorAll('.nav-link.active');
-    // if (activeLinks.length === 0) {
-    //     const dashboardLink = document.querySelector('a[href="admin_dashboard.php"]');
-    //     if (dashboardLink) dashboardLink.classList.add('active');
-    // }
+    // Close sidebar on mobile when resizing to mobile
+    window.addEventListener('resize', function() {
+        if (isMobile()) {
+            // Remove desktop state on mobile
+            document.documentElement.classList.remove('sidebar-open');
+            sidebar.classList.remove('active');
+            sidebarTrigger.classList.remove('hidden');
+            if (sidebarOverlay) {
+                sidebarOverlay.classList.remove('active');
+            }
+        }
+    });
 });
 </script>
+

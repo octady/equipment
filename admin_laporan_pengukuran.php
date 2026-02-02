@@ -12,7 +12,6 @@ if ($_SESSION['role'] != 'admin') {
     exit;
 }
 
-// Handle Delete
 if (isset($_POST['delete_id'])) {
     $delete_id = intval($_POST['delete_id']);
     $stmt = $conn->prepare("DELETE FROM laporan_pengukuran WHERE id = ?");
@@ -22,12 +21,10 @@ if (isset($_POST['delete_id'])) {
     exit;
 }
 
-// Filters
 $filter_month = $_GET['month'] ?? '';
 $filter_year = $_GET['year'] ?? '';
 $search = $_GET['search'] ?? '';
 
-// Build query
 $where = ["1=1"];
 $params = [];
 $types = "";
@@ -60,7 +57,6 @@ $stmt->execute();
 $result = $stmt->get_result();
 $reports = $result->fetch_all(MYSQLI_ASSOC);
 
-// Get years for filter
 $years_result = $conn->query("SELECT DISTINCT YEAR(tanggal) as year FROM laporan_pengukuran ORDER BY year DESC");
 $available_years = [];
 while ($row = $years_result->fetch_assoc()) {
@@ -259,6 +255,82 @@ $indo_months = [
             align-items: center;
             gap: 10px;
         }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                margin: 70px auto 30px;
+                padding: 0 15px;
+            }
+            
+            .header-section {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            
+            .page-title h1 {
+                font-size: 18px;
+            }
+            
+            .filter-box {
+                width: 100%;
+                padding: 12px;
+            }
+            
+            .filter-box input[type="text"],
+            .filter-box select {
+                flex: 1;
+                min-width: 100px;
+            }
+            
+            .table-container {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            table {
+                min-width: 600px;
+            }
+            
+            th, td {
+                padding: 10px 12px;
+                font-size: 13px;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .container {
+                margin: 65px auto 20px;
+                padding: 0 10px;
+            }
+            
+            .page-title h1 {
+                font-size: 16px;
+            }
+            
+            .page-title p {
+                font-size: 12px;
+            }
+            
+            .filter-box {
+                gap: 10px;
+            }
+            
+            table {
+                min-width: 550px;
+            }
+            
+            th, td {
+                padding: 8px 10px;
+                font-size: 12px;
+            }
+            
+            .btn-action {
+                padding: 6px 10px;
+                font-size: 11px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -372,7 +444,6 @@ $indo_months = [
     <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
 
     <script>
-    // Store all reports data for Excel download
     const reportsData = <?= json_encode(array_map(function($r) {
         return [
             'id' => $r['id'],
