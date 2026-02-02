@@ -597,6 +597,18 @@ $indo_months = [
                 padding: 16px;
             }
             
+            .form-header {
+                padding: 24px 20px;
+            }
+
+            .form-header h1 {
+                font-size: 1.2rem;
+            }
+
+            .form-header p {
+                font-size: 0.85rem;
+            }
+            
             .header-meta {
                 flex-direction: column;
                 gap: 12px;
@@ -604,10 +616,79 @@ $indo_months = [
             
             .meta-item {
                 width: 100%;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+                padding: 14px 16px;
+            }
+
+            .meta-item label {
+                font-size: 0.85rem;
             }
             
+            .meta-item input,
             .meta-item select {
-                flex: 1;
+                width: 100%;
+                min-width: 100%;
+                flex: none;
+                padding: 12px 14px;
+                font-size: 0.9rem;
+            }
+
+            .section-header {
+                padding: 16px 20px;
+                flex-wrap: wrap;
+                gap: 12px;
+            }
+
+            .section-header h2 {
+                font-size: 0.9rem;
+            }
+
+            .section-body {
+                padding: 16px;
+            }
+
+            .button-bar {
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .btn-action,
+            .btn-download {
+                width: 100%;
+                justify-content: center;
+                margin-right: 0;
+            }
+
+            .view-mode-banner {
+                flex-direction: column;
+                gap: 16px;
+                text-align: center;
+            }
+
+            .view-mode-banner i {
+                margin-right: 0;
+            }
+
+            .view-mode-banner > a {
+                width: 100%;
+                text-align: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .form-header h1 {
+                font-size: 1.1rem;
+            }
+
+            .meta-item {
+                border-radius: 8px;
+            }
+            
+            .meta-item input,
+            .meta-item select {
+                border-radius: 8px;
             }
         }
 </style>
