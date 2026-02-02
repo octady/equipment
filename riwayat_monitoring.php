@@ -437,7 +437,6 @@ $current_page = basename($_SERVER['PHP_SELF']);
         @media (max-width: 768px) {
             body { 
                 padding-top: 85px; 
-                overflow-x: hidden; /* GLOBAL LOCK: Prevent horizontal scroll */
             }
             .header-content { padding: 10px 15px; }
             .logo-injourney { height: 35px; }
@@ -455,108 +454,93 @@ $current_page = basename($_SERVER['PHP_SELF']);
             .nav-item > a { padding: 15px 25px; border-bottom: 1px solid #f8f9fa; }
             .logout-btn { margin: 15px 25px; }
 
-            /* REMOVE ALL PADDING FROM CONTAINER ON MOBILE to ensure full width */
+            /* Main content - proper padding */
             .main-content { 
-                padding: 10px 0 30px 0 !important; 
-                width: 100% !important;
-                overflow-x: hidden !important; 
-            }
-            .control-panel, .page-header {
-                padding-left: 10px;
-                padding-right: 10px;
+                padding: 16px !important; 
+                max-width: 100%;
+                overflow-x: hidden;
             }
             
-            .filter-row { grid-template-columns: 1fr; }
+            /* Control Panel - full width, no scroll */
+            .control-panel {
+                padding: 16px;
+                margin-bottom: 20px;
+                overflow: hidden;
+            }
+            
+            .filter-row { 
+                grid-template-columns: 1fr; 
+                gap: 12px;
+            }
 
-            /* Responsive Table -> STRICT Full Scaled View */
-            table {
-                width: 100% !important;
-                table-layout: fixed !important; 
-                border-collapse: collapse;
-                margin: 0 !important; /* No margin */
+            .filter-group select,
+            .filter-group input {
+                width: 100%;
+                box-sizing: border-box;
             }
-            
-            thead { display: table-header-group; }
-            tbody { display: table-row-group; }
-            tr { display: table-row !important; background: white; border-bottom: 1px solid #e2e8f0; }
-            td, th { 
-                display: table-cell !important; 
-                vertical-align: middle;
-                word-wrap: break-word; 
-                word-break: break-all; /* Aggressive break */
-                white-space: normal !important; 
-                hyphens: auto;
+
+            /* Category Section */
+            .category-section {
+                margin-bottom: 24px;
             }
-            
-            thead tr { 
+
+            .category-title {
+                padding: 0 4px;
+                font-size: 16px;
+                margin-bottom: 12px;
+            }
+
+            /* Table Card with Scroll Indicator - ONLY table scrolls */
+            .table-card {
+                border-radius: 12px;
                 position: relative;
-                top: auto; 
-                left: auto;
+                overflow: hidden;
             }
 
-            /* Header Styling for Mobile */
+            .table-responsive {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            /* Scroll hint text - only for table */
+            .table-responsive::before {
+                content: '← Geser untuk melihat semua →';
+                display: block;
+                text-align: center;
+                font-size: 11px;
+                color: #64748b;
+                padding: 8px;
+                background: linear-gradient(135deg, #f0fdfa 0%, #e0f2fe 100%);
+                border-bottom: 1px solid #e2e8f0;
+                font-weight: 500;
+                position: sticky;
+                left: 0;
+            }
+
+            table {
+                min-width: 650px;
+                border-collapse: collapse;
+            }
+            
+            th, td { 
+                white-space: nowrap;
+                padding: 12px 10px !important;
+            }
+
             th {
-                font-size: 10px;
-                padding: 8px 2px;
+                font-size: 11px;
                 background: #0d5d63;
                 color: white;
-                text-align: center;
             }
 
-            /* Column Sizing - Adjusted for best fit */
-            /* Col 1: Name (40%) */
-            th:nth-child(1), td:nth-child(1) {
-                width: 40% !important;
-                padding: 8px 2px 8px 6px; /* Small left padding */
-                text-align: left;
-            }
-
-            td:nth-child(1) {
-                font-size: 10.5px;
-                line-height: 1.25;
-                font-weight: 600;
-            }
-            td:nth-child(1) .text-secondary { 
-                font-size: 9px; 
-                display: block; 
-                margin-top: 2px;
-            }
-
-            /* Col 2: Location (30%) */
-            th:nth-child(2), td:nth-child(2) {
-                width: 30% !important;
-                text-align: left;
-                padding: 8px 2px;
-            }
-            td:nth-child(2) {
-                font-size: 10px;
-                color: #64748b;
-                line-height: 1.2;
-            }
-            tr td { vertical-align: top !important; } 
-
-            /* Col 3: Status (30%) */
-            th:nth-child(3), td:nth-child(3) {
-                width: 30% !important;
-                text-align: center;
-                padding: 8px 2px 8px 0;
-            }
-            
-            td:nth-child(3) .badge {
-                width: auto;
-                max-width: 95%; 
-                font-size: 9px;
-                padding: 4px 2px;
-                white-space: normal; /* Allow wrapping inside badge */
-                display: inline-block;
-                line-height: 1.2;
+            td {
+                font-size: 13px;
             }
 
             .summary-header {
                 flex-direction: column;
                 align-items: flex-start !important;
                 gap: 15px;
-                padding: 0 10px; /* Add padding back to header text */
             }
             .summary-header > div {
                 width: 100%;

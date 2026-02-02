@@ -24,6 +24,7 @@ $existing_data = $conn->query("SELECT * FROM inspeksi ORDER BY tanggal DESC, id 
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Input Laporan Kegiatan - Equipment Monitoring</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
         rel="stylesheet">
@@ -378,6 +379,288 @@ $existing_data = $conn->query("SELECT * FROM inspeksi ORDER BY tanggal DESC, id 
         .tab-content.active {
             display: block;
         }
+
+        /* ============================================
+           RESPONSIVE STYLES FOR FORM INSPEKSI
+        ============================================ */
+        
+        /* Tablet Responsive */
+        @media (max-width: 992px) {
+            .p-container {
+                padding: 0 16px;
+                margin-top: 20px;
+            }
+
+            .p-card {
+                margin: 0 auto 16px auto !important;
+            }
+
+            .p-card-header {
+                padding: 24px 20px 20px 20px;
+            }
+
+            .data-table-container {
+                padding: 0 20px 24px 20px;
+            }
+
+            .btn-add-row {
+                margin: 0 20px 24px 20px;
+                width: calc(100% - 40px);
+            }
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .p-container {
+                padding: 0 12px;
+                margin-top: 16px;
+            }
+
+            /* Download Excel Section */
+            .p-card[style*="padding: 20px 32px"] {
+                padding: 16px !important;
+            }
+
+            .p-card[style*="padding: 20px 32px"] > div {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 16px !important;
+            }
+
+            .p-card[style*="padding: 20px 32px"] > div > div:last-child {
+                width: 100%;
+                flex-direction: column !important;
+            }
+
+            .p-card[style*="padding: 20px 32px"] > div > div:last-child > div {
+                width: 100%;
+                flex-direction: row !important;
+                justify-content: space-between;
+            }
+
+            .p-card[style*="padding: 20px 32px"] input[type="date"] {
+                flex: 1;
+            }
+
+            .btn-excel {
+                width: 100%;
+                justify-content: center;
+                padding: 12px 20px;
+            }
+
+            /* Tabs Section */
+            div[style*="padding: 24px 32px 0 32px"] {
+                padding: 16px 16px 0 16px !important;
+            }
+
+            .tabs {
+                width: 100%;
+            }
+
+            .tab-btn {
+                flex: 1;
+                padding: 12px 10px;
+                font-size: 0.8rem;
+                text-align: center;
+            }
+
+            .tab-btn i {
+                display: none;
+            }
+
+            /* Card Header */
+            .p-card-header {
+                padding: 20px 16px;
+            }
+
+            .p-card-header > div {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 16px !important;
+            }
+
+            .p-card-header > div > div[style*="margin-left: auto"] {
+                margin-left: 0 !important;
+                width: 100%;
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 8px !important;
+            }
+
+            .p-card-header > div > div[style*="margin-left: auto"] input[type="date"] {
+                width: 100% !important;
+                padding: 10px 12px !important;
+                background: white !important;
+                border: 1px solid #e2e8f0 !important;
+                border-radius: 8px !important;
+            }
+
+            /* Data Table Container */
+            .data-table-container {
+                padding: 0 16px 20px 16px;
+                margin-top: 20px !important;
+            }
+
+            /* Activity Table - Card Layout for Mobile */
+            .activity-table {
+                min-width: unset;
+            }
+
+            .activity-table thead {
+                display: none;
+            }
+
+            .activity-table tbody tr {
+                display: block;
+                background: #f8fafc;
+                border-radius: 12px;
+                padding: 16px;
+                margin-bottom: 12px;
+                border: 1px solid #e2e8f0;
+            }
+
+            .activity-table tbody td {
+                display: flex;
+                flex-direction: column;
+                padding: 8px 0;
+                border-bottom: none;
+            }
+
+            .activity-table tbody td:before {
+                content: attr(data-label);
+                font-weight: 600;
+                font-size: 0.75rem;
+                color: #64748b;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                margin-bottom: 4px;
+            }
+
+            .activity-table tbody td:first-child {
+                display: none;
+            }
+
+            .activity-table tbody td:last-child {
+                flex-direction: row;
+                justify-content: flex-end;
+                padding-top: 12px;
+                border-top: 1px solid #e2e8f0;
+                margin-top: 8px;
+            }
+
+            .activity-table .table-input {
+                width: 100%;
+            }
+
+            .activity-table textarea.table-input {
+                min-height: 60px !important;
+                height: auto !important;
+            }
+
+            /* Mini Upload */
+            .mini-upload {
+                width: 100%;
+                height: 80px;
+                flex-direction: row;
+                gap: 8px;
+            }
+
+            /* Add Row Button */
+            .btn-add-row {
+                margin: 0 16px 20px 16px;
+                width: calc(100% - 32px);
+                padding: 16px;
+            }
+
+            /* Submit Section */
+            div[style*="text-align: right; padding: 24px 32px"] {
+                padding: 16px !important;
+                text-align: center !important;
+            }
+
+            div[style*="text-align: right; padding: 24px 32px"] .p-btn-submit {
+                width: 100%;
+            }
+
+            /* Data List Table - Keep table format with horizontal scroll */
+            .data-list-table {
+                display: table;
+                min-width: 700px;
+            }
+
+            .data-table-container {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .data-list-table th,
+            .data-list-table td {
+                white-space: nowrap;
+                padding: 12px 10px !important;
+                font-size: 0.85rem;
+            }
+
+            .data-list-table tbody td:before {
+                display: none;
+            }
+
+            /* Modal */
+            .modal-content {
+                width: 95%;
+                max-height: 85vh;
+                padding: 20px;
+                margin: 16px;
+            }
+
+            .modal-header h3 {
+                font-size: 1rem;
+            }
+
+            .modal-footer {
+                flex-direction: column;
+            }
+
+            .modal-footer button {
+                width: 100%;
+            }
+
+            /* Alert Messages */
+            .alert-success,
+            .alert-error {
+                margin: 0 0 16px 0 !important;
+                padding: 12px 16px !important;
+                font-size: 0.85rem;
+            }
+
+            /* Empty State */
+            .empty-state {
+                padding: 30px 16px;
+            }
+
+            .empty-state i {
+                font-size: 36px;
+            }
+        }
+
+        /* Small Mobile */
+        @media (max-width: 480px) {
+            .p-section-title {
+                font-size: 0.9rem;
+            }
+
+            .p-section-subtitle {
+                font-size: 0.7rem;
+            }
+
+            .tab-btn {
+                font-size: 0.75rem;
+                padding: 10px 8px;
+            }
+
+            .btn-action {
+                padding: 8px 12px;
+            }
+        }
     </style>
 </head>
 
@@ -506,12 +789,12 @@ $existing_data = $conn->query("SELECT * FROM inspeksi ORDER BY tanggal DESC, id 
                             <?php foreach ($existing_data as $i => $row): ?>
                             <tr id="data-row-<?= $row['id'] ?>">
                                 <td style="text-align: center; color: #94a3b8;"><?= $i + 1 ?></td>
-                                <td><strong><?= htmlspecialchars($row['kegiatan']) ?></strong></td>
-                                <td><?= htmlspecialchars($row['lokasi']) ?></td>
-                                <td style="text-align: center;"><?= date('d M Y', strtotime($row['tanggal'])) ?></td>
-                                <td><?= nl2br(htmlspecialchars($row['hasil'])) ?></td>
-                                <td style="color: #64748b; font-size: 0.85rem;"><?= nl2br(htmlspecialchars($row['catatan'])) ?></td>
-                                <td style="text-align: center;">
+                                <td data-label="Kegiatan"><strong><?= htmlspecialchars($row['kegiatan']) ?></strong></td>
+                                <td data-label="Lokasi"><?= htmlspecialchars($row['lokasi']) ?></td>
+                                <td data-label="Tanggal" style="text-align: center;"><?= date('d M Y', strtotime($row['tanggal'])) ?></td>
+                                <td data-label="Hasil"><?= nl2br(htmlspecialchars($row['hasil'])) ?></td>
+                                <td data-label="Catatan" style="color: #64748b; font-size: 0.85rem;"><?= nl2br(htmlspecialchars($row['catatan'])) ?></td>
+                                <td data-label="Foto" style="text-align: center;">
                                     <?php if (!empty($row['foto']) && file_exists($row['foto'])): ?>
                                         <img src="<?= htmlspecialchars($row['foto']) ?>" class="foto-thumb" onclick="showImage('<?= htmlspecialchars($row['foto']) ?>')">
                                     <?php else: ?>
@@ -613,15 +896,15 @@ $existing_data = $conn->query("SELECT * FROM inspeksi ORDER BY tanggal DESC, id 
             
             tr.innerHTML = `
                 <td style="text-align: center; color: #94a3b8; font-weight: 600; padding-top: 22px;">${rowCount}</td>
-                <td><input type="text" name="items[${rowCount}][kegiatan]" class="table-input" placeholder="Nama Kegiatan..."></td>
-                <td><input type="text" name="items[${rowCount}][lokasi]" list="lokasiList" class="table-input" placeholder="Lokasi..."></td>
-                <td><input type="date" name="items[${rowCount}][tanggal]" class="table-input" value="${defaultDate}"></td>
-                <td><textarea name="items[${rowCount}][hasil]" class="table-input" rows="1" placeholder="Hasil..." style="resize: none; height: 42px; overflow:hidden;" oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"></textarea></td>
-                <td><textarea name="items[${rowCount}][catatan]" class="table-input" rows="1" placeholder="Catatan..." style="resize: none; height: 42px; overflow:hidden;" oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"></textarea></td>
-                <td>
+                <td data-label="Nama Kegiatan"><input type="text" name="items[${rowCount}][kegiatan]" class="table-input" placeholder="Nama Kegiatan..."></td>
+                <td data-label="Lokasi"><input type="text" name="items[${rowCount}][lokasi]" list="lokasiList" class="table-input" placeholder="Lokasi..."></td>
+                <td data-label="Tanggal"><input type="date" name="items[${rowCount}][tanggal]" class="table-input" value="${defaultDate}"></td>
+                <td data-label="Hasil Inspeksi"><textarea name="items[${rowCount}][hasil]" class="table-input" rows="1" placeholder="Hasil..." style="resize: none; height: 42px; overflow:hidden;" oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"></textarea></td>
+                <td data-label="Catatan"><textarea name="items[${rowCount}][catatan]" class="table-input" rows="1" placeholder="Catatan..." style="resize: none; height: 42px; overflow:hidden;" oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"></textarea></td>
+                <td data-label="Dokumentasi">
                     <div class="mini-upload" onclick="this.nextElementSibling.click()" title="Upload Foto">
                         <i class="fas fa-camera"></i>
-                        <span>Img</span>
+                        <span>Upload Foto</span>
                     </div>
                     <input type="file" name="items[${rowCount}][foto]" accept="image/*" style="display:none" onchange="previewMini(this)">
                 </td>

@@ -5018,3 +5018,318 @@ Params: Array
     [0] => 2026-01-31
 )
 
+Date: 2026-02-02 11:22:00
+GET: Array
+(
+)
+
+SQL: SELECT 
+            e.id as equipment_id,
+            e.nama_peralatan,
+            s.parent_category,
+            s.nama_section,
+            l.nama_lokasi,
+            i.status,
+            i.keterangan,
+            i.checked_by,
+            i.created_at,
+            ip.foto_path
+        FROM equipments e
+        JOIN sections s ON e.section_id = s.id
+        JOIN lokasi l ON e.lokasi_id = l.id
+        JOIN monitoring i ON e.id = i.equipment_id AND i.tanggal = ?
+        LEFT JOIN (
+            SELECT inspection_id, MAX(foto_path) as foto_path 
+            FROM dokumentasi_masalah 
+            GROUP BY inspection_id
+        ) ip ON i.id = ip.inspection_id
+        WHERE 1=1 ORDER BY s.parent_category, s.urutan, e.nama_peralatan
+Params: Array
+(
+    [0] => 2026-02-02
+)
+
+Date: 2026-02-02 11:25:57
+GET: Array
+(
+)
+
+SQL: SELECT 
+            e.id as equipment_id,
+            e.nama_peralatan,
+            s.parent_category,
+            s.nama_section,
+            l.nama_lokasi,
+            i.status,
+            i.keterangan,
+            i.checked_by,
+            i.created_at,
+            ip.foto_path
+        FROM equipments e
+        JOIN sections s ON e.section_id = s.id
+        JOIN lokasi l ON e.lokasi_id = l.id
+        JOIN monitoring i ON e.id = i.equipment_id AND i.tanggal = ?
+        LEFT JOIN (
+            SELECT inspection_id, MAX(foto_path) as foto_path 
+            FROM dokumentasi_masalah 
+            GROUP BY inspection_id
+        ) ip ON i.id = ip.inspection_id
+        WHERE 1=1 ORDER BY s.parent_category, s.urutan, e.nama_peralatan
+Params: Array
+(
+    [0] => 2026-02-02
+)
+
+Date: 2026-02-02 11:46:07
+GET: Array
+(
+)
+
+SQL: SELECT 
+            e.id as equipment_id,
+            e.nama_peralatan,
+            s.parent_category,
+            s.nama_section,
+            l.nama_lokasi,
+            i.status,
+            i.keterangan,
+            i.checked_by,
+            i.created_at,
+            ip.foto_path
+        FROM equipments e
+        JOIN sections s ON e.section_id = s.id
+        JOIN lokasi l ON e.lokasi_id = l.id
+        JOIN monitoring i ON e.id = i.equipment_id AND i.tanggal = ?
+        LEFT JOIN (
+            SELECT inspection_id, MAX(foto_path) as foto_path 
+            FROM dokumentasi_masalah 
+            GROUP BY inspection_id
+        ) ip ON i.id = ip.inspection_id
+        WHERE 1=1 ORDER BY s.parent_category, s.urutan, e.nama_peralatan
+Params: Array
+(
+    [0] => 2026-02-02
+)
+
+2026-02-02 11:46:41 - Saving Checklist. Count: 197
+Date: 2026-02-02 11:46:50
+GET: Array
+(
+)
+
+SQL: SELECT 
+            e.id as equipment_id,
+            e.nama_peralatan,
+            s.parent_category,
+            s.nama_section,
+            l.nama_lokasi,
+            i.status,
+            i.keterangan,
+            i.checked_by,
+            i.created_at,
+            ip.foto_path
+        FROM equipments e
+        JOIN sections s ON e.section_id = s.id
+        JOIN lokasi l ON e.lokasi_id = l.id
+        JOIN monitoring i ON e.id = i.equipment_id AND i.tanggal = ?
+        LEFT JOIN (
+            SELECT inspection_id, MAX(foto_path) as foto_path 
+            FROM dokumentasi_masalah 
+            GROUP BY inspection_id
+        ) ip ON i.id = ip.inspection_id
+        WHERE 1=1 ORDER BY s.parent_category, s.urutan, e.nama_peralatan
+Params: Array
+(
+    [0] => 2026-02-02
+)
+
+Date: 2026-02-02 11:47:31
+GET: Array
+(
+    [date] => 2026-02-02
+)
+
+SQL: SELECT 
+            e.id as equipment_id,
+            e.nama_peralatan,
+            s.parent_category,
+            s.nama_section,
+            l.nama_lokasi,
+            i.status,
+            i.keterangan,
+            i.checked_by,
+            i.created_at,
+            ip.foto_path
+        FROM equipments e
+        JOIN sections s ON e.section_id = s.id
+        JOIN lokasi l ON e.lokasi_id = l.id
+        JOIN monitoring i ON e.id = i.equipment_id AND i.tanggal = ?
+        LEFT JOIN (
+            SELECT inspection_id, MAX(foto_path) as foto_path 
+            FROM dokumentasi_masalah 
+            GROUP BY inspection_id
+        ) ip ON i.id = ip.inspection_id
+        WHERE 1=1 ORDER BY s.parent_category, s.urutan, e.nama_peralatan
+Params: Array
+(
+    [0] => 2026-02-02
+)
+
+Date: 2026-02-02 11:50:25
+GET: Array
+(
+    [date] => 2026-02-02
+)
+
+SQL: SELECT 
+            e.id as equipment_id,
+            e.nama_peralatan,
+            s.parent_category,
+            s.nama_section,
+            l.nama_lokasi,
+            i.status,
+            i.keterangan,
+            i.checked_by,
+            i.created_at,
+            ip.foto_path
+        FROM equipments e
+        JOIN sections s ON e.section_id = s.id
+        JOIN lokasi l ON e.lokasi_id = l.id
+        JOIN monitoring i ON e.id = i.equipment_id AND i.tanggal = ?
+        LEFT JOIN (
+            SELECT inspection_id, MAX(foto_path) as foto_path 
+            FROM dokumentasi_masalah 
+            GROUP BY inspection_id
+        ) ip ON i.id = ip.inspection_id
+        WHERE 1=1 ORDER BY s.parent_category, s.urutan, e.nama_peralatan
+Params: Array
+(
+    [0] => 2026-02-02
+)
+
+Date: 2026-02-02 11:50:59
+GET: Array
+(
+)
+
+SQL: SELECT 
+            e.id as equipment_id,
+            e.nama_peralatan,
+            s.parent_category,
+            s.nama_section,
+            l.nama_lokasi,
+            i.status,
+            i.keterangan,
+            i.checked_by,
+            i.created_at,
+            ip.foto_path
+        FROM equipments e
+        JOIN sections s ON e.section_id = s.id
+        JOIN lokasi l ON e.lokasi_id = l.id
+        JOIN monitoring i ON e.id = i.equipment_id AND i.tanggal = ?
+        LEFT JOIN (
+            SELECT inspection_id, MAX(foto_path) as foto_path 
+            FROM dokumentasi_masalah 
+            GROUP BY inspection_id
+        ) ip ON i.id = ip.inspection_id
+        WHERE 1=1 ORDER BY s.parent_category, s.urutan, e.nama_peralatan
+Params: Array
+(
+    [0] => 2026-02-02
+)
+
+Date: 2026-02-02 11:52:29
+GET: Array
+(
+    [date] => 2026-02-02
+)
+
+SQL: SELECT 
+            e.id as equipment_id,
+            e.nama_peralatan,
+            s.parent_category,
+            s.nama_section,
+            l.nama_lokasi,
+            i.status,
+            i.keterangan,
+            i.checked_by,
+            i.created_at,
+            ip.foto_path
+        FROM equipments e
+        JOIN sections s ON e.section_id = s.id
+        JOIN lokasi l ON e.lokasi_id = l.id
+        JOIN monitoring i ON e.id = i.equipment_id AND i.tanggal = ?
+        LEFT JOIN (
+            SELECT inspection_id, MAX(foto_path) as foto_path 
+            FROM dokumentasi_masalah 
+            GROUP BY inspection_id
+        ) ip ON i.id = ip.inspection_id
+        WHERE 1=1 ORDER BY s.parent_category, s.urutan, e.nama_peralatan
+Params: Array
+(
+    [0] => 2026-02-02
+)
+
+Date: 2026-02-02 11:53:37
+GET: Array
+(
+    [date] => 2026-02-02
+)
+
+SQL: SELECT 
+            e.id as equipment_id,
+            e.nama_peralatan,
+            s.parent_category,
+            s.nama_section,
+            l.nama_lokasi,
+            i.status,
+            i.keterangan,
+            i.checked_by,
+            i.created_at,
+            ip.foto_path
+        FROM equipments e
+        JOIN sections s ON e.section_id = s.id
+        JOIN lokasi l ON e.lokasi_id = l.id
+        JOIN monitoring i ON e.id = i.equipment_id AND i.tanggal = ?
+        LEFT JOIN (
+            SELECT inspection_id, MAX(foto_path) as foto_path 
+            FROM dokumentasi_masalah 
+            GROUP BY inspection_id
+        ) ip ON i.id = ip.inspection_id
+        WHERE 1=1 ORDER BY s.parent_category, s.urutan, e.nama_peralatan
+Params: Array
+(
+    [0] => 2026-02-02
+)
+
+Date: 2026-02-02 11:53:51
+GET: Array
+(
+)
+
+SQL: SELECT 
+            e.id as equipment_id,
+            e.nama_peralatan,
+            s.parent_category,
+            s.nama_section,
+            l.nama_lokasi,
+            i.status,
+            i.keterangan,
+            i.checked_by,
+            i.created_at,
+            ip.foto_path
+        FROM equipments e
+        JOIN sections s ON e.section_id = s.id
+        JOIN lokasi l ON e.lokasi_id = l.id
+        JOIN monitoring i ON e.id = i.equipment_id AND i.tanggal = ?
+        LEFT JOIN (
+            SELECT inspection_id, MAX(foto_path) as foto_path 
+            FROM dokumentasi_masalah 
+            GROUP BY inspection_id
+        ) ip ON i.id = ip.inspection_id
+        WHERE 1=1 ORDER BY s.parent_category, s.urutan, e.nama_peralatan
+Params: Array
+(
+    [0] => 2026-02-02
+)
+
