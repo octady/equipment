@@ -12,11 +12,9 @@ if ($_SESSION['role'] != 'admin') {
     exit;
 }
 
-// Handle Delete
 if (isset($_POST['delete_id'])) {
     $delete_id = intval($_POST['delete_id']);
     
-    // Get file path first to delete image
     $stmt = $conn->prepare("SELECT foto FROM inspeksi WHERE id = ?");
     $stmt->bind_param("i", $delete_id);
     $stmt->execute();
@@ -28,7 +26,6 @@ if (isset($_POST['delete_id'])) {
     }
     $stmt->close();
     
-    // Delete record
     $stmt = $conn->prepare("DELETE FROM inspeksi WHERE id = ?");
     $stmt->bind_param("i", $delete_id);
     $stmt->execute();
@@ -36,14 +33,11 @@ if (isset($_POST['delete_id'])) {
     exit;
 }
 
-// AJAX Handler
 if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
-    // Prevent Caching
     header("Cache-Control: no-cache, no-store, must-revalidate");
     header("Pragma: no-cache");
     header("Expires: 0");
     
-    // Clear output buffer
     if (ob_get_length()) ob_clean();
     
     $filter_month = $_GET['month'] ?? '';
@@ -138,8 +132,6 @@ $indo_months = [
         
         /* Layout Fixes - CLOSED STATE (Default) */
         .main-content {
-            /* Top: 30px, Right: 20px, Bottom: 20px */
-            /* LEFT: 80px (To avoid overlap with hamburger button) */
             padding: 30px 20px 20px 80px !important; 
             box-sizing: border-box !important;
             width: 100% !important;
@@ -148,14 +140,20 @@ $indo_months = [
 
         /* Sidebar adjustment - OPEN STATE */
         html.sidebar-open body .main-content {
-            /* No extra margin needed - body already has padding-left from sidebar */
             margin-left: 0 !important;
-            
-            /* Full width minus sidebar */
             width: 100% !important;
-            
-            /* Standard padding */
             padding: 30px 20px 20px 20px !important;
+        }
+        
+        /* Mobile: No push, just top padding for hamburger */
+        @media (max-width: 992px) {
+            .main-content {
+                padding: 70px 15px 20px 15px !important;
+            }
+            
+            html.sidebar-open body .main-content {
+                padding: 70px 15px 20px 15px !important;
+            }
         }
         
         /* Utilities */
@@ -185,12 +183,13 @@ $indo_months = [
         .table-container { 
             background: white; 
             border-radius: 12px; 
-            overflow: hidden; 
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
             border: 1px solid #e2e8f0; 
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
         
-        table { width: 100%; border-collapse: collapse; }
+        table { width: 100%; border-collapse: collapse; min-width: 600px; }
         th { 
             background: #f8fafc; 
             padding: 14px 16px; 
@@ -244,6 +243,146 @@ $indo_months = [
         /* Modal */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; align-items: center; justify-content: center; }
         .modal-content { max-width: 90%; max-height: 90%; border-radius: 8px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+        
+        /* Responsive */
+        @media (max-width: 992px) {
+            .main-content {
+                padding: 70px 15px 15px 15px !important;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 70px 10px 10px 10px !important;
+            }
+            
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            
+            .header-title h1 {
+                font-size: 20px;
+            }
+            
+            .header-title p {
+                font-size: 12px;
+            }
+            
+            .filter-section {
+                gap: 10px;
+                padding: 12px;
+            }
+            
+            .filter-input {
+                padding: 8px 12px;
+                font-size: 13px;
+            }
+            
+            .search-box {
+                min-width: 150px;
+            }
+            
+            /* Table Responsive */
+            .table-container {
+                border-radius: 10px;
+            }
+            
+            table {
+                display: block;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            th {
+                padding: 12px 10px;
+                font-size: 11px;
+            }
+            
+            td {
+                padding: 12px 10px;
+                font-size: 13px;
+            }
+            
+            .btn-download {
+                padding: 8px 16px;
+                font-size: 13px;
+            }
+            
+            .photo-thumb {
+                width: 40px;
+                height: 40px;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .main-content {
+                padding: 65px 10px 10px 10px !important;
+            }
+            
+            .page-header {
+                margin-bottom: 16px;
+            }
+            
+            .header-title h1 {
+                font-size: 18px;
+            }
+            
+            .filter-section {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .filter-input {
+                width: 100%;
+            }
+            
+            .search-box {
+                min-width: 100%;
+            }
+            
+            /* Table minimum width */
+            table {
+                min-width: 600px;
+            }
+            
+            th {
+                padding: 10px 8px;
+                font-size: 10px;
+            }
+            
+            td {
+                padding: 10px 8px;
+                font-size: 12px;
+            }
+            
+            .btn-download {
+                padding: 8px 12px;
+                font-size: 12px;
+                gap: 6px;
+            }
+            
+            .btn-delete {
+                width: 28px;
+                height: 28px;
+            }
+            
+            .photo-thumb {
+                width: 36px;
+                height: 36px;
+            }
+            
+            /* Date inputs in header */
+            .page-header > div:last-child {
+                width: 100%;
+                flex-wrap: wrap;
+            }
+            
+            .page-header > div:last-child input[type="date"] {
+                flex: 1 1 40%;
+            }
+        }
     </style>
 </head>
 <body>

@@ -1,13 +1,4 @@
 <?php
-/**
- * Script untuk menambah circuit baru ke template Excel
- * Mempertahankan 100% formatting asli (logo, warna, merge, border, dll)
- * 
- * Cara pakai:
- * 1. Akses via browser: add_circuit_template.php?count=2 (untuk tambah 2 circuit)
- * 2. File template baru akan di-download
- */
-
 session_start();
 require 'vendor/autoload.php';
 

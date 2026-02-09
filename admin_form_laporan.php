@@ -1,8 +1,6 @@
 <?php
 session_start();
 include "config/database.php";
-
-// Check login and admin role
 if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
     header("Location: login.php");
     exit;
@@ -69,16 +67,14 @@ if (isset($_GET['id'])) {
     }
 }
 
-// Fetch Personnel list
 $personnel_list = [];
 $res_p = $conn->query("SELECT * FROM personnel ORDER BY nama_personnel");
 if ($res_p) {
     while ($row = $res_p->fetch_assoc())
         $personnel_list[] = $row;
 }
-
-// Fetch all saved reports for this user
-$my_reports = [];
+$my_repo
+rts = [];
 $user_id = $_SESSION['user_id'] ?? null;
 if ($user_id) {
     $res_reports = $conn->query("SELECT lp.id, lp.tanggal, p.nama_personnel, lp.created_at FROM laporan_pengukuran lp LEFT JOIN personnel p ON lp.personel_id = p.id WHERE lp.user_id = $user_id ORDER BY lp.tanggal DESC LIMIT 10");
@@ -111,7 +107,6 @@ if (localStorage.getItem('sidebarOpen') === 'true') {
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="assets/css/monitoring.css">
-    <!-- SheetJS Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root {
@@ -119,8 +114,6 @@ if (localStorage.getItem('sidebarOpen') === 'true') {
             --brand-teal-dark: #065C63;
             --brand-emerald: #10b981;
         }
-
-        /* Override global padding for admin view */
         body {
             padding-top: 0 !important;
         }
@@ -1551,18 +1544,10 @@ if (localStorage.getItem('sidebarOpen') === 'true') {
             
             return data;
         }
-
-        // Helper: Fill date cell in a sheet (Row 7, around column F)
         function fillDate(sheet, formattedDate) {
-            // Try common positions for date - adjust based on your template
-            // Template shows "TANGGAL : 21 November 2025" - date value around F7 or G7
             sheet['F7'] = { t: 's', v: formattedDate };
         }
-
-        // Helper: Fill "Dibuat" personnel name in signature section
         function fillDibuat(sheet, dibuatOleh, signatureRow) {
-            // Personnel name goes in the "Dibuat" section - around column N, row ~50
-            // The exact row may vary per sheet
             const cell = XLSX.utils.encode_cell({r: signatureRow - 1, c: 13}); // Column N = index 13
             sheet[cell] = { t: 's', v: dibuatOleh };
         }
@@ -1571,29 +1556,10 @@ if (localStorage.getItem('sidebarOpen') === 'true') {
             const sheetName = workbook.SheetNames[0];
             const sheet = workbook.Sheets[sheetName];
             
-            // Fill date and personnel name
             fillDate(sheet, formattedDate);
-            fillDibuat(sheet, dibuatOleh, 50); // Adjust row number based on template
-            
-            // Get only item rows (not circuit headers), these are the rows with input fields
+            fillDibuat(sheet, dibuatOleh, 50); 
             const tbody = document.getElementById('tbodyTahananIsolasi');
             const itemRows = tbody.querySelectorAll('tr.item-row');
-            
-            // Starting Excel row for data items (based on template)
-            // Row 20 = first item (Panjang kabel under circuit 1)
-            // Row 21 = second item (Tahanan isolasi under circuit 1)
-            // Row 23 = first item (Panjang kabel under circuit 2) - skip circuit header row
-            // etc.
-            
-            // Based on template structure:
-            // Row 19: Circuit 1 header
-            // Row 20: Panjang kabel (first data row)
-            // Row 21: Tahanan isolasi
-            // Row 22: Circuit 2 header
-            // Row 23: Panjang kabel
-            // Row 24: Tahanan isolasi
-            // ... pattern: header, item, item, header, item, item...
-            
             let circuitIndex = 0;
             let itemInCircuit = 0;
             let excelRow = 20; // First data row in Excel
@@ -1603,32 +1569,25 @@ if (localStorage.getItem('sidebarOpen') === 'true') {
                 const checkedRadio = row.querySelector('.status-radio:checked');
                 const status = checkedRadio ? checkedRadio.value : '';
                 const keterangan = row.querySelector('.keterangan')?.value || '';
-                
-                // Only write if there's a value
                 if (hasil) {
-                    // Column L (index 11) = HASIL
                     sheet[XLSX.utils.encode_cell({r: excelRow - 1, c: 11})] = { t: 's', v: hasil };
                 }
                 if (status === 'NORMAL') {
-                    // Column M (index 12) = NORMAL
                     sheet[XLSX.utils.encode_cell({r: excelRow - 1, c: 12})] = { t: 's', v: 'NORMAL' };
                 } else if (status === 'TIDAK NORMAL') {
-                    // Column N (index 13) = TIDAK NORMAL  
                     sheet[XLSX.utils.encode_cell({r: excelRow - 1, c: 13})] = { t: 's', v: 'TIDAK NORMAL' };
                 }
                 if (keterangan) {
-                    // Column O (index 14) = KETERANGAN
                     sheet[XLSX.utils.encode_cell({r: excelRow - 1, c: 14})] = { t: 's', v: keterangan };
                 }
                 
                 itemInCircuit++;
                 excelRow++;
                 
-                // After 2 items (Panjang kabel & Tahanan isolasi), skip the circuit header row
                 if (itemInCircuit >= 2) {
                     itemInCircuit = 0;
                     circuitIndex++;
-                    excelRow++; // Skip circuit header row
+                    excelRow++; 
                 }
             });
         }
@@ -1639,17 +1598,10 @@ if (localStorage.getItem('sidebarOpen') === 'true') {
             const sheetName = workbook.SheetNames[1];
             const sheet = workbook.Sheets[sheetName];
             
-            // Fill date and personnel name
             fillDate(sheet, formattedDate);
-            fillDibuat(sheet, dibuatOleh, 50); // Adjust row number based on template
-            
             const tbody = document.getElementById('tbodySimulasiGenset');
             const itemRows = tbody.querySelectorAll('tr.item-row');
-            
-            // Get the existing rows in template and match them
-            // For now, we'll use a simple sequential approach
-            // Adjust starting row based on your template
-            let excelRow = 15; // Adjust this based on template
+            let excelRow = 15;
             
             itemRows.forEach(row => {
                 const hasil = row.querySelector('.hasil')?.value || '';
@@ -1678,14 +1630,13 @@ if (localStorage.getItem('sidebarOpen') === 'true') {
             const sheetName = workbook.SheetNames[2];
             const sheet = workbook.Sheets[sheetName];
             
-            // Fill date and personnel name
             fillDate(sheet, formattedDate);
-            fillDibuat(sheet, dibuatOleh, 50); // Based on screenshot, row 50 has name
+            fillDibuat(sheet, dibuatOleh, 50); 
             
             const tbody = document.getElementById('tbodySimulasiUPS');
             const itemRows = tbody.querySelectorAll('tr.item-row');
             
-            let excelRow = 15; // Adjust based on template
+            let excelRow = 15; 
             
             itemRows.forEach(row => {
                 const hasil = row.querySelector('.hasil')?.value || '';
@@ -1725,7 +1676,6 @@ if (localStorage.getItem('sidebarOpen') === 'true') {
                 return;
             }
             
-            // Collect Tahanan Isolasi data
             const tahananIsolasiData = [];
             const tbody = document.getElementById('tbodyTahananIsolasi');
             const circuitRows = tbody.querySelectorAll('.circuit-row');
@@ -1734,13 +1684,9 @@ if (localStorage.getItem('sidebarOpen') === 'true') {
                 const circuitId = circuitRow.id;
                 const circuitName = circuitRow.querySelector('.circuit-name')?.value || '';
                 const items = [];
-                
-                // Get all item-rows that belong to this circuit
                 const itemRows = tbody.querySelectorAll(`tr.item-row[data-circuit-id="${circuitId}"]`);
                 itemRows.forEach(row => {
-                    // Get keterangan - it may be in first row with rowspan
                     let keterangan = row.querySelector('.keterangan')?.value || '';
-                    // If not found, check first row of this circuit group
                     if (!keterangan) {
                         const firstItemRow = tbody.querySelector(`tr.item-row[data-circuit-id="${circuitId}"]`);
                         if (firstItemRow) {
@@ -1759,25 +1705,21 @@ if (localStorage.getItem('sidebarOpen') === 'true') {
                 tahananIsolasiData.push({ name: circuitName, items: items });
             });
             
-            // Collect Simulasi Genset data - save itemName/satuan for ALL rows
             const simulasiGensetData = [];
             const gensetRows = document.querySelectorAll('#tbodySimulasiGenset .item-row');
             gensetRows.forEach((row, idx) => {
-                // Check if this is an extra row (added dynamically, has id starting with item_pembebanan)
                 const isExtra = row.id && row.id.includes('item_pembebanan');
                 
                 simulasiGensetData.push({
                     hasil: row.querySelector('.hasil')?.value || '',
                     status: row.querySelector('.status-radio:checked')?.value || '',
                     keterangan: row.querySelector('.keterangan')?.value || '',
-                    // Save itemName and satuan for ALL rows (so edits are preserved)
                     isExtra: isExtra,
                     itemName: row.querySelector('.item-name')?.value || '',
                     satuan: row.querySelector('.satuan')?.value || ''
                 });
             });
             
-            // Collect Simulasi UPS data - save itemName/satuan for ALL rows
             const simulasiUPSData = [];
             const upsRows = document.querySelectorAll('#tbodySimulasiUPS .item-row');
             upsRows.forEach(row => {
@@ -1806,13 +1748,10 @@ if (localStorage.getItem('sidebarOpen') === 'true') {
         // ========================================
         <?php if ($saved_report): ?>
         document.addEventListener('DOMContentLoaded', function() {
-            // Set date (personnel is already set via PHP selected attribute)
             document.getElementById('tanggalLaporan').value = '<?= $saved_report['tanggal'] ?>';
             
-            // Load Tahanan Isolasi data - REPLACE default data with saved data
             const savedTahananIsolasi = <?= $saved_report['tahanan_isolasi_data'] ?: '[]' ?>;
             if (savedTahananIsolasi.length > 0) {
-                // Clear existing table and re-render with saved data
                 const tbody = document.getElementById('tbodyTahananIsolasi');
                 tbody.innerHTML = '';
                 

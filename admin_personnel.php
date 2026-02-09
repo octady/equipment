@@ -12,10 +12,6 @@ if ($_SESSION['role'] != 'admin') {
     exit;
 }
 
-// -- HANDLE FORM SUBMISSION --
-// Use session for alerts: $_SESSION['alert'] = ['type' => 'success/error', 'message' => '...'];
-
-// 1. ADD
 if (isset($_POST['add'])) {
     $nama = strtoupper($_POST['nama_personnel']); 
     $jabatan = $_POST['jabatan'];
@@ -32,7 +28,6 @@ if (isset($_POST['add'])) {
     exit;
 }
 
-// 2. UPDATE
 if (isset($_POST['update'])) {
     $id = $_POST['id'];
     $nama = strtoupper($_POST['nama_personnel']);
@@ -50,7 +45,6 @@ if (isset($_POST['update'])) {
     exit;
 }
 
-// 3. DELETE
 if (isset($_GET['delete'])) {
     $id = $_GET['delete'];
     $stmt = $conn->prepare("DELETE FROM personnel WHERE id = ?");
@@ -65,7 +59,6 @@ if (isset($_GET['delete'])) {
     exit;
 }
 
-// Fetch All Personnel
 $personnel = $conn->query("SELECT * FROM personnel ORDER BY nama_personnel ASC")->fetch_all(MYSQLI_ASSOC);
 ?>
 
@@ -327,9 +320,120 @@ $personnel = $conn->query("SELECT * FROM personnel ORDER BY nama_personnel ASC")
 
 
         /* Responsive */
+        @media (max-width: 992px) {
+            .admin-main {
+                padding: 20px 15px;
+            }
+        }
+        
         @media (max-width: 768px) {
-            .form-grid { grid-template-columns: 1fr; }
-            .admin-main { padding: 15px; }
+            .form-grid { 
+                grid-template-columns: 1fr; 
+            }
+            
+            .admin-main { 
+                padding: 70px 15px 15px 15px;
+            }
+            
+            .card-header {
+                padding: 16px;
+            }
+            
+            .card-body {
+                padding: 16px;
+            }
+            
+            /* Table Responsive */
+            table {
+                display: block;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            thead th {
+                font-size: 11px;
+                padding: 12px 10px;
+            }
+            
+            tbody td {
+                font-size: 13px;
+                padding: 12px 10px;
+            }
+            
+            .modal-box {
+                max-width: 90%;
+                margin: 20px;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .admin-main { 
+                padding: 65px 10px 10px 10px;
+            }
+            
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+            
+            .page-header .page-title h1 {
+                font-size: 18px;
+            }
+            
+            .card {
+                border-radius: 10px;
+            }
+            
+            .card-header {
+                padding: 14px;
+                font-size: 14px;
+            }
+            
+            .card-body {
+                padding: 14px;
+            }
+            
+            .form-control {
+                padding: 10px 12px;
+                font-size: 14px;
+            }
+            
+            .btn {
+                padding: 10px 16px;
+                font-size: 13px;
+            }
+            
+            /* Table minimum width for scroll */
+            table {
+                min-width: 500px;
+            }
+            
+            thead th {
+                font-size: 10px;
+                padding: 10px 8px;
+            }
+            
+            tbody td {
+                font-size: 12px;
+                padding: 10px 8px;
+            }
+            
+            .action-btn {
+                width: 32px;
+                height: 32px;
+                font-size: 12px;
+            }
+            
+            .modal-box {
+                max-width: 95%;
+                padding: 16px;
+                margin: 10px;
+            }
+            
+            .modal-header h3 {
+                font-size: 16px;
+            }
         }
     </style>
 </head>

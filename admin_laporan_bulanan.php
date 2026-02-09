@@ -12,17 +12,13 @@ if ($_SESSION['role'] != 'admin') {
     exit;
 }
 
-// Filter Logic
-$selected_month = $_GET['month'] ?? date('n'); // 1-12
-$selected_year = $_GET['year'] ?? date('Y'); // YYYY
+$selected_month = $_GET['month'] ?? date('n');
+$selected_year = $_GET['year'] ?? date('Y');
 
-// Format for DB query: YYYY-MM
 $filter_date = sprintf("%04d-%02d", $selected_year, $selected_month);
 
-// Days in month
 $days_in_month = cal_days_in_month(CAL_GREGORIAN, $selected_month, $selected_year);
 
-// Fetch Sections
 $sections = $conn->query("SELECT * FROM sections ORDER BY urutan ASC")->fetch_all(MYSQLI_ASSOC);
 
 ?>
@@ -33,7 +29,6 @@ $sections = $conn->query("SELECT * FROM sections ORDER BY urutan ASC")->fetch_al
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Laporan Bulanan (Admin)</title>
     <script>
-    // Critical: Run BEFORE any rendering to prevent sidebar flicker  
     if (localStorage.getItem('sidebarOpen') === 'true') {
         document.documentElement.classList.add('sidebar-open');
     }
@@ -195,25 +190,19 @@ $sections = $conn->query("SELECT * FROM sections ORDER BY urutan ASC")->fetch_al
             z-index: 2; 
             text-align: left; 
             width: 250px; 
-            min-width: 250px;
-            white-space: normal; /* Allow text wrapping */
+            min-width: 250px
+            white-space: normal; 
             overflow: hidden;
             text-overflow: ellipsis;
         }
-
-        /* Ensure sticky cells have correct background */
         tbody tr:nth-child(odd) td:nth-child(1), tbody tr:nth-child(odd) td:nth-child(2) { background: #fff; }
         tbody tr:nth-child(even) td:nth-child(1), tbody tr:nth-child(even) td:nth-child(2) { background: #f8fafc; }
-        
-        /* High Z-Index for the top-left corner headers */
         thead tr:first-child th:nth-child(1), thead tr:first-child th:nth-child(2) { background: #0f172a; z-index: 20; }
 
 
         .col-sticky { position: sticky; left: 0; background: white; z-index: 5; }
-
-        /* Ensure these take precedence over the generic td:nth-child(1) rule */
         tr.section-row td {
-            background: #0d5d63 !important; /* Brand Teal */
+            background: #0d5d63 !important; 
             font-weight: 700;
             text-align: left;
             padding: 10px 15px;
@@ -222,21 +211,20 @@ $sections = $conn->query("SELECT * FROM sections ORDER BY urutan ASC")->fetch_al
             left: 0;
             z-index: 5;
             width: auto !important; 
-            min-width: auto !important; /* Force override */
+            min-width: auto !important; 
         }
         
         tr.category-row td {
             position: sticky;
             left: 0;
-            z-index: 6; /* Higher index to sit on top */
+            z-index: 6; 
             background: #0f172a !important; 
             color: white !important;
             width: auto !important;
-            min-width: auto !important; /* Force override */
+            min-width: auto !important; 
             font-weight: 800;   
         }
 
-        /* Status Colors */
         .bg-O { background: #dcfce7; color: #166534; font-weight: 700; }
         .bg-X { background: #fee2e2; color: #991b1b; font-weight: 700; }
         .bg-V { background: #fef9c3; color: #854d0e; font-weight: 700; }
@@ -247,7 +235,6 @@ $sections = $conn->query("SELECT * FROM sections ORDER BY urutan ASC")->fetch_al
         .perf-mid { color: #854d0e; font-weight: 600; }
         .perf-low { color: #991b1b; font-weight: 700; }
 
-        /* Legend */
         .legend-bar {
             margin-top: 20px;
             display: flex;
@@ -258,7 +245,149 @@ $sections = $conn->query("SELECT * FROM sections ORDER BY urutan ASC")->fetch_al
         }
         .legend-item { display: flex; align-items: center; gap: 8px; }
         .dot { width: 12px; height: 12px; border-radius: 4px; }
+        @media (max-width: 992px) {
+            .container {
+                padding: 0 15px;
+            }
+            
+            .header-section {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
         
+        @media (max-width: 768px) {
+            .container {
+                margin: 20px auto;
+                padding: 0 10px;
+            }
+            
+            .page-title h1 {
+                font-size: 20px;
+            }
+            
+            .page-title p {
+                font-size: 12px;
+            }
+            
+            .filter-box {
+                flex-wrap: wrap;
+                padding: 12px 16px;
+            }
+            
+            .filter-box select {
+                flex: 1 1 auto;
+                min-width: 100px;
+            }
+            
+            .btn-export {
+                padding: 8px 16px;
+                font-size: 13px;
+            }
+            
+            .btn-daily {
+                padding: 8px 16px;
+                font-size: 13px;
+            }
+            
+            /* Table Container */
+            .table-container {
+                border-radius: 12px;
+            }
+            
+            table {
+                font-size: 11px;
+            }
+            
+            th, td {
+                padding: 6px 4px;
+            }
+            
+            .legend-bar {
+                gap: 12px;
+                font-size: 11px;
+            }
+            
+            .legend-item {
+                gap: 6px;
+            }
+            
+            .dot {
+                width: 10px;
+                height: 10px;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            body {
+                padding-bottom: 30px;
+            }
+            
+            .container {
+                margin: 15px auto;
+                padding: 0 8px;
+            }
+            
+            .page-title h1 {
+                font-size: 18px;
+            }
+            
+            .header-section {
+                gap: 12px;
+                margin-bottom: 16px;
+            }
+            
+            .filter-box {
+                width: 100%;
+                gap: 10px;
+                padding: 10px 12px;
+            }
+            
+            .filter-box label {
+                display: none;
+            }
+            
+            .filter-box select {
+                padding: 6px 10px;
+                font-size: 13px;
+            }
+            
+            .btn-go {
+                padding: 6px 12px;
+            }
+            
+            .btn-export, .btn-daily {
+                padding: 8px 12px;
+                font-size: 12px;
+                gap: 6px;
+            }
+            
+            table {
+                font-size: 10px;
+            }
+            
+            th, td {
+                padding: 4px 3px;
+            }
+            
+            /* Sticky columns smaller on mobile */
+            thead tr:first-child th:nth-child(1), tbody td:nth-child(1) {
+                width: 30px;
+                min-width: 30px;
+            }
+            
+            thead tr:first-child th:nth-child(2), tbody td:nth-child(2) {
+                width: 150px;
+                min-width: 150px;
+                left: 30px;
+            }
+            
+            .legend-bar {
+                margin-top: 15px;
+                gap: 8px;
+                font-size: 10px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -337,7 +466,6 @@ $sections = $conn->query("SELECT * FROM sections ORDER BY urutan ASC")->fetch_al
                     <?php
                     $no = 1;
 
-                    // Group sections by category
                     $categories = ['MECHANICAL' => [], 'ELECTRICAL' => []];
                     foreach ($sections as $sec) {
                         $cat = !empty($sec['parent_category']) ? $sec['parent_category'] : 'MECHANICAL'; 
@@ -347,14 +475,12 @@ $sections = $conn->query("SELECT * FROM sections ORDER BY urutan ASC")->fetch_al
                     foreach ($categories as $cat_name => $cat_sections) {
                         if (empty($cat_sections)) continue;
 
-                        // CATEGORY HEADER
                         $colspan = 6 + $days_in_month;
                         echo "<tr class='category-row'>";
                         echo "<td colspan='$colspan' style='text-align: left; padding: 10px; font-weight: 800; font-size: 14px; letter-spacing: 1px;'>$cat_name FACILITY</td>";
                         echo "</tr>";
 
                         foreach ($cat_sections as $section) {
-                            // Fetch Equipment for this section
                             $equipments = $conn->query("
                                 SELECT e.*, l.nama_lokasi
                                 FROM equipments e
@@ -363,10 +489,8 @@ $sections = $conn->query("SELECT * FROM sections ORDER BY urutan ASC")->fetch_al
                                 ORDER BY e.nama_peralatan
                             ")->fetch_all(MYSQLI_ASSOC);
 
-                            if (empty($equipments)) continue; // Skip section if empty (e.g. filter active)
+                            if (empty($equipments)) continue;
 
-                            // Section Header Row (Only show if we have equipments)
-                            // Section headers
                             echo "<tr class='section-row'>";
                             echo "<td colspan='$colspan'>" . htmlspecialchars($section['nama_section']) . "</td>";
                             echo "</tr>";
@@ -381,7 +505,6 @@ $sections = $conn->query("SELECT * FROM sections ORDER BY urutan ASC")->fetch_al
                                 echo "<td style='text-align:left; font-weight: 500;'>" . htmlspecialchars($eq['nama_peralatan']) . "</td>";
                                 echo "<td style='font-size: 11px; color:#64748b;'>" . htmlspecialchars($eq['nama_lokasi']) . "</td>";
 
-                                // Get daily data
                                 $status_counts = ['O' => 0, 'X' => 0, 'V' => 0, '-' => 0];
                                 $total_downtime = 0;
 
@@ -400,7 +523,6 @@ $sections = $conn->query("SELECT * FROM sections ORDER BY urutan ASC")->fetch_al
                                     if ($check) {
                                         $status_counts[$status]++;
                                         
-                                        // Calculate Downtime based on 24 hours standard or equipment specific
                                         $max_hours_per_day = 24; 
                                         if (isset($eq['jam_operasi_harian']) && $eq['jam_operasi_harian'] > 0) {
                                             $max_hours_per_day = $eq['jam_operasi_harian'];
@@ -416,10 +538,8 @@ $sections = $conn->query("SELECT * FROM sections ORDER BY urutan ASC")->fetch_al
                                     echo "<td class='$cls'>$status</td>";
                                 }
 
-                                // Calculate Performance (Serviceability) based on User Formula
-                                // Formula: ((TotalHours - TotalDowntime) / TotalHours) * 100
                                 $total_potential_hours = $days_in_month * 24;
-                                $perf = 100; // Default 100% if no downtime
+                                $perf = 100; 
                                 
                                 if($total_potential_hours > 0) {
                                     $perf = (($total_potential_hours - $total_downtime) / $total_potential_hours) * 100;
@@ -429,7 +549,6 @@ $sections = $conn->query("SELECT * FROM sections ORDER BY urutan ASC")->fetch_al
                                 if($perf < 90) $perf_cls = 'perf-mid';
                                 if($perf < 80) $perf_cls = 'perf-low';
 
-                                // Accumulate for Section Average
                                 $section_total_perf += $perf;
                                 $section_total_downtime += $total_downtime;
                                 $section_eq_count++;
@@ -441,26 +560,24 @@ $sections = $conn->query("SELECT * FROM sections ORDER BY urutan ASC")->fetch_al
                                 $no++;
                             }
 
-                            // RATA-RATA ROW
                             if ($section_eq_count > 0) {
                                 $avg_perf = $section_total_perf / $section_eq_count;
-                                $avg_downtime = $section_total_downtime / $section_eq_count; // Calculating average downtime too
+                                $avg_downtime = $section_total_downtime / $section_eq_count;
                                 
                                 $avg_perf_cls = 'perf-high';
                                 if($avg_perf < 90) $avg_perf_cls = 'perf-mid';
                                 if($avg_perf < 80) $avg_perf_cls = 'perf-low';
 
                                 echo "<tr style='font-weight: bold; background-color: #f1f5f9;'>";
-                                echo "<td></td>"; // No
-                                echo "<td style='text-align: center;'>RATA-RATA</td>"; // Nama Peralatan
-                                echo "<td></td>"; // Lokasi
+                                echo "<td></td>";
+                                echo "<td style='text-align: center;'>RATA-RATA</td>";
+                                echo "<td></td>";
                                 
-                                // Empty cells for days
                                 echo str_repeat("<td></td>", $days_in_month);
                                 
                                 echo "<td>" . ($avg_downtime > 0 ? number_format($avg_downtime, 1) : '0') . "</td>";
                                 echo "<td class='$avg_perf_cls'>" . number_format($avg_perf, 1) . "%</td>";
-                                echo "<td></td>"; // Keterangan
+                                echo "<td></td>";
                                 echo "</tr>";
                             }
                         }
